@@ -34,7 +34,11 @@
       "favicon": "./assets/icons/favicon.png",
       "bundler": "metro"
     },
-    "extra": {},
+    "extra": {
+      "eas": {
+        "projectId": "2f4fdf16-c8a9-4768-ac74-6f666d8f3a4d"
+      }
+    },
     "owner": "hatungclovis",
     "privacy": "public",
     "description": "Enhanced Wordle-style word guessing game with multiple difficulty levels, customizable word lengths, and comprehensive statistics tracking.",
