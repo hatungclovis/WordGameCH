@@ -1,1 +1,180 @@
-import React from 'react';\nimport {\n  View,\n  Text,\n  TouchableOpacity,\n  StyleSheet,\n  Dimensions,\n} from 'react-native';\nimport * as Haptics from 'expo-haptics';\nimport { useGameStore } from '../../services/gameStore';\nimport { GameEngine } from '../../services/GameEngine';\nimport { LetterState } from '../../types';\n\nconst { width: screenWidth } = Dimensions.get('window');\n\nconst QWERTY_ROWS = [\n  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],\n  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],\n  ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'DELETE']\n];\n\nexport default function Keyboard() {\n  const { \n    settings,\n    guesses,\n    currentGuess,\n    gameStatus,\n    wordLength,\n    makeGuess,\n    updateCurrentGuess\n  } = useGameStore();\n  \n  // Get keyboard state based on guesses\n  const keyboardState = React.useMemo(() => {\n    return GameEngine.getKeyboardState(guesses);\n  }, [guesses]);\n  \n  const handleKeyPress = async (key: string) => {\n    if (gameStatus !== 'playing') return;\n    \n    // Haptic feedback\n    if (settings.hapticEnabled) {\n      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);\n    }\n    \n    if (key === 'DELETE') {\n      const newGuess = currentGuess.slice(0, -1);\n      updateCurrentGuess(newGuess);\n    } else if (key === 'ENTER') {\n      if (currentGuess.length === wordLength) {\n        const result = await makeGuess(currentGuess);\n        // makeGuess will handle clearing currentGuess on success\n      }\n    } else if (currentGuess.length < wordLength) {\n      const newGuess = currentGuess + key;\n      updateCurrentGuess(newGuess);\n    }\n  };\n  \n  const getKeyStyle = (key: string) => {\n    const state = keyboardState[key] || 'empty';\n    const isSpecialKey = key === 'ENTER' || key === 'DELETE';\n    \n    return [\n      styles.key,\n      isSpecialKey && styles.specialKey,\n      {\n        backgroundColor: getKeyBackgroundColor(state, isSpecialKey),\n      }\n    ];\n  };\n  \n  const getKeyBackgroundColor = (state: LetterState, isSpecialKey: boolean) => {\n    if (isSpecialKey) {\n      return settings.darkMode ? '#818384' : '#d3d6da';\n    }\n    \n    switch (state) {\n      case 'correct':\n        return '#6aaa64';\n      case 'present':\n        return '#c9b458';\n      case 'absent':\n        return settings.darkMode ? '#3a3a3c' : '#787c7e';\n      default:\n        return settings.darkMode ? '#818384' : '#d3d6da';\n    }\n  };\n  \n  const getKeyTextColor = (state: LetterState, isSpecialKey: boolean) => {\n    if (state === 'empty' || isSpecialKey) {\n      return settings.darkMode ? '#ffffff' : '#1a1a1b';\n    }\n    return '#ffffff';\n  };\n  \n  return (\n    <View style={styles.container}>\n      <View style={styles.currentInput}>\n        <Text style={[styles.inputText, settings.darkMode && styles.darkText]}>\n          {currentGuess.padEnd(wordLength, '_')}\n        </Text>\n      </View>\n      \n      {QWERTY_ROWS.map((row, rowIndex) => (\n        <View key={rowIndex} style={styles.row}>\n          {row.map((key) => {\n            const state = keyboardState[key] || 'empty';\n            const isSpecialKey = key === 'ENTER' || key === 'DELETE';\n            \n            return (\n              <TouchableOpacity\n                key={key}\n                style={getKeyStyle(key)}\n                onPress={() => handleKeyPress(key)}\n                activeOpacity={0.7}\n              >\n                <Text \n                  style={[\n                    styles.keyText,\n                    isSpecialKey && styles.specialKeyText,\n                    { color: getKeyTextColor(state, isSpecialKey) }\n                  ]}\n                >\n                  {key === 'DELETE' ? '\u2326' : key}\n                </Text>\n              </TouchableOpacity>\n            );\n          })}\n        </View>\n      ))}\n    </View>\n  );\n}\n\nconst styles = StyleSheet.create({\n  container: {\n    paddingHorizontal: 8,\n    paddingBottom: 20,\n  },\n  currentInput: {\n    alignItems: 'center',\n    marginBottom: 20,\n    padding: 15,\n  },\n  inputText: {\n    fontSize: 24,\n    fontWeight: 'bold',\n    letterSpacing: 8,\n    color: '#1a1a1b',\n  },\n  darkText: {\n    color: '#ffffff',\n  },\n  row: {\n    flexDirection: 'row',\n    justifyContent: 'center',\n    marginBottom: 8,\n  },\n  key: {\n    backgroundColor: '#d3d6da',\n    borderRadius: 4,\n    marginHorizontal: 3,\n    minWidth: (screenWidth - 80) / 10,\n    height: 58,\n    justifyContent: 'center',\n    alignItems: 'center',\n  },\n  specialKey: {\n    minWidth: (screenWidth - 80) / 6.5,\n  },\n  keyText: {\n    fontSize: 16,\n    fontWeight: 'bold',\n    color: '#1a1a1b',\n  },\n  specialKeyText: {\n    fontSize: 12,\n  },\n});\n"
+import React from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from 'react-native';
+import { triggerHapticFeedback } from '../../utils/haptics';
+import { useGameStore } from '../../services/gameStore';
+import { GameEngine } from '../../services/GameEngine';
+import { LetterState } from '../../types';
+
+const { width: screenWidth } = Dimensions.get('window');
+
+const QWERTY_ROWS = [
+  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+  ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'DELETE']
+];
+
+export default function Keyboard() {
+  const { 
+    settings,
+    guesses,
+    currentGuess,
+    gameStatus,
+    wordLength,
+    makeGuess,
+    updateCurrentGuess
+  } = useGameStore();
+  
+  // Get keyboard state based on guesses
+  const keyboardState = React.useMemo(() => {
+    return GameEngine.getKeyboardState(guesses);
+  }, [guesses]);
+  
+  const handleKeyPress = async (key: string) => {
+    if (gameStatus !== 'playing') return;
+    
+    // Haptic feedback
+    if (settings.hapticEnabled) {
+      triggerHapticFeedback('Light');
+    }
+    
+    if (key === 'DELETE') {
+      const newGuess = currentGuess.slice(0, -1);
+      updateCurrentGuess(newGuess);
+    } else if (key === 'ENTER') {
+      if (currentGuess.length === wordLength) {
+        const result = await makeGuess(currentGuess);
+        // makeGuess will handle clearing currentGuess on success
+      }
+    } else if (currentGuess.length < wordLength) {
+      const newGuess = currentGuess + key;
+      updateCurrentGuess(newGuess);
+    }
+  };
+  
+  const getKeyStyle = (key: string) => {
+    const state = keyboardState[key] || 'empty';
+    const isSpecialKey = key === 'ENTER' || key === 'DELETE';
+    
+    return [
+      styles.key,
+      isSpecialKey && styles.specialKey,
+      {
+        backgroundColor: getKeyBackgroundColor(state, isSpecialKey),
+      }
+    ];
+  };
+  
+  const getKeyBackgroundColor = (state: LetterState, isSpecialKey: boolean) => {
+    if (isSpecialKey) {
+      return settings.darkMode ? '#818384' : '#d3d6da';
+    }
+    
+    switch (state) {
+      case 'correct':
+        return '#6aaa64';
+      case 'present':
+        return '#c9b458';
+      case 'absent':
+        return settings.darkMode ? '#3a3a3c' : '#787c7e';
+      default:
+        return settings.darkMode ? '#818384' : '#d3d6da';
+    }
+  };
+  
+  const getKeyTextColor = (state: LetterState, isSpecialKey: boolean) => {
+    if (state === 'empty' || isSpecialKey) {
+      return settings.darkMode ? '#ffffff' : '#1a1a1b';
+    }
+    return '#ffffff';
+  };
+  
+  return (
+    <View style={styles.container}>
+      <View style={styles.currentInput}>
+        <Text style={[styles.inputText, settings.darkMode && styles.darkText]}>
+          {currentGuess.padEnd(wordLength, '_')}
+        </Text>
+      </View>
+      
+      {QWERTY_ROWS.map((row, rowIndex) => (
+        <View key={rowIndex} style={styles.row}>
+          {row.map((key) => {
+            const state = keyboardState[key] || 'empty';
+            const isSpecialKey = key === 'ENTER' || key === 'DELETE';
+            
+            return (
+              <TouchableOpacity
+                key={key}
+                style={getKeyStyle(key)}
+                onPress={() => handleKeyPress(key)}
+                activeOpacity={0.7}
+              >
+                <Text 
+                  style={[
+                    styles.keyText,
+                    isSpecialKey && styles.specialKeyText,
+                    { color: getKeyTextColor(state, isSpecialKey) }
+                  ]}
+                >
+                  {key === 'DELETE' ? '\u2326' : key}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 8,
+    paddingBottom: 20,
+  },
+  currentInput: {
+    alignItems: 'center',
+    marginBottom: 20,
+    padding: 15,
+  },
+  inputText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    letterSpacing: 8,
+    color: '#1a1a1b',
+  },
+  darkText: {
+    color: '#ffffff',
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  key: {
+    backgroundColor: '#d3d6da',
+    borderRadius: 4,
+    marginHorizontal: 3,
+    minWidth: (screenWidth - 80) / 10,
+    height: 58,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  specialKey: {
+    minWidth: (screenWidth - 80) / 6.5,
+  },
+  keyText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a1a1b',
+  },
+  specialKeyText: {
+    fontSize: 12,
+  },
+});
