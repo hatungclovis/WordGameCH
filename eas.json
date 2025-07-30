@@ -18,13 +18,13 @@
         "buildConfiguration": "Release"
       },
       "android": {
-        "buildType": "aab"
+        "buildType": "apk"
       }
     },
     "production-aab": {
       "extends": "production",
       "android": {
-        "buildType": "aab"
+        "buildType": "app-bundle"
       }
     }
   },
