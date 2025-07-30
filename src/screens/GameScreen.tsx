@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   ActivityIndicator,
-  Alert,
   TouchableOpacity,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -14,6 +13,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { useGameStore } from '../services/gameStore';
 import GameBoard from '../components/game/GameBoard';
 import Keyboard from '../components/game/Keyboard';
+import GameResultModal from '../components/game/GameResultModal';
 
 type GameScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Game'>;
 type GameScreenRouteProp = RouteProp<RootStackParamList, 'Game'>;
@@ -27,68 +27,55 @@ export default function GameScreen({ navigation, route }: Props) {
   const { 
     settings, 
     startNewGame, 
-    makeGuess,
     useHint,
+    resetGame,
     gameStatus,
-    currentWord,
     score,
     attemptsLeft,
     hintsUsed,
     isLoading,
     errorMessage,
-    currentGuess
+    difficulty,
+    wordLength: currentWordLength
   } = useGameStore();
-  const { difficulty, wordLength } = route.params;
-  const [inputGuess, setInputGuess] = React.useState('');
+  
+  const { difficulty: routeDifficulty, wordLength } = route.params;
+  const [showResultModal, setShowResultModal] = React.useState(false);
 
   React.useEffect(() => {
     // Initialize the game when screen loads
-    startNewGame(difficulty, wordLength);
-  }, [difficulty, wordLength, startNewGame]);
+    startNewGame(routeDifficulty, wordLength);
+  }, [routeDifficulty, wordLength, startNewGame]);
 
-  const handleSubmitGuess = async () => {
-    if (inputGuess.length !== wordLength) {
-      Alert.alert('Invalid guess', `Word must be ${wordLength} letters long`);
-      return;
+  // Show result modal when game ends
+  React.useEffect(() => {
+    if (gameStatus === 'won' || gameStatus === 'lost') {
+      // Delay to allow final animation to complete
+      setTimeout(() => setShowResultModal(true), 1500);
     }
-
-    const result = await makeGuess(inputGuess);
-    if (!result.valid && result.message) {
-      Alert.alert('Invalid guess', result.message);
-    } else {
-      setInputGuess('');
-    }
-  };
+  }, [gameStatus]);
 
   const handleUseHint = () => {
     const hint = useHint();
     if (hint) {
-      Alert.alert('Hint', `The letter "${hint.letter}" is in the word!`);
+      // You could show a toast or alert here
+      console.log(`Hint: The letter "${hint.letter}" is in the word!`);
     } else {
-      Alert.alert('No hints available', 'All letters have been revealed or tried.');
+      console.log('No hints available');
     }
   };
 
-  const handleGameEnd = () => {
-    const message = gameStatus === 'won' 
-      ? `Congratulations! You found the word "${currentWord}"!\nScore: ${score}`
-      : `Game over! The word was "${currentWord}".\nScore: ${score}`;
-    
-    Alert.alert(
-      gameStatus === 'won' ? 'You Won!' : 'Game Over',
-      message,
-      [
-        { text: 'View Stats', onPress: () => navigation.navigate('Stats') },
-        { text: 'Play Again', onPress: () => navigation.navigate('Home') },
-      ]
-    );
+  const handlePlayAgain = () => {
+    setShowResultModal(false);
+    resetGame();
+    startNewGame(routeDifficulty, wordLength);
   };
 
-  React.useEffect(() => {
-    if (gameStatus === 'won' || gameStatus === 'lost') {
-      setTimeout(handleGameEnd, 1000); // Delay to show final guess
-    }
-  }, [gameStatus]);
+  const handleGoHome = () => {
+    setShowResultModal(false);
+    resetGame();
+    navigation.navigate('Home');
+  };
 
   if (isLoading) {
     return (
@@ -123,33 +110,58 @@ export default function GameScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={[styles.container, settings.darkMode && styles.darkContainer]}>
-      <View style={styles.header}>
-        <Text style={[styles.difficultyText, settings.darkMode && styles.darkText]}>
-          {difficulty.toUpperCase()} • {wordLength} letters
-        </Text>
-        <Text style={[styles.scoreText, settings.darkMode && styles.darkText]}>
-          Score: {score} • Attempts: {attemptsLeft}
-        </Text>
+      {/* Header */}
+      <View style={[styles.header, settings.darkMode && styles.darkHeader]}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={[styles.backButtonText, settings.darkMode && styles.darkText]}>← Back</Text>
+        </TouchableOpacity>
+        
+        <View style={styles.headerCenter}>
+          <Text style={[styles.difficultyText, settings.darkMode && styles.darkText]}>
+            {routeDifficulty.toUpperCase()} • {wordLength} letters
+          </Text>
+          <Text style={[styles.scoreText, settings.darkMode && styles.darkSubtitle]}>
+            Score: {score} • Attempts: {attemptsLeft}
+          </Text>
+        </View>
+        
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={() => navigation.navigate('Stats')}>
+            <Text style={[styles.statsButton, settings.darkMode && styles.darkText]}>📊</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
+      {/* Game Area */}
       <View style={styles.gameArea}>
         <GameBoard />
       </View>
 
+      {/* Controls */}
       {gameStatus === 'playing' && (
         <View style={styles.keyboardArea}>
           <Keyboard />
           
           <View style={styles.bottomControls}>
             <TouchableOpacity 
-              style={styles.hintButton}
+              style={[styles.hintButton, settings.darkMode && styles.darkHintButton]}
               onPress={handleUseHint}
             >
-              <Text style={styles.buttonText}>💡 Hint ({hintsUsed} used)</Text>
+              <Text style={styles.hintButtonText}>💡 Hint ({hintsUsed} used)</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
+
+      {/* Result Modal */}
+      <GameResultModal
+        visible={showResultModal}
+        onPlayAgain={handlePlayAgain}
+        onGoHome={handleGoHome}
+      />
     </SafeAreaView>
   );
 }
@@ -163,21 +175,48 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1b',
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e5e5',
+  },
+  darkHeader: {
+    borderBottomColor: '#3a3a3c',
+  },
+  backButton: {
+    flex: 1,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#6aaa64',
+    fontWeight: '600',
+  },
+  headerCenter: {
+    flex: 2,
+    alignItems: 'center',
+  },
+  headerRight: {
+    flex: 1,
+    alignItems: 'flex-end',
   },
   difficultyText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1a1a1b',
-    marginBottom: 5,
+    marginBottom: 2,
   },
   scoreText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#787c7e',
+  },
+  darkSubtitle: {
+    color: '#a0a0a0',
+  },
+  statsButton: {
+    fontSize: 18,
+    color: '#6aaa64',
   },
   loadingContainer: {
     flex: 1,
@@ -223,15 +262,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 10,
+    paddingBottom: 20,
   },
   hintButton: {
     backgroundColor: '#c9b458',
-    borderRadius: 8,
+    borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  buttonText: {
+  darkHintButton: {
+    backgroundColor: '#8a7c3a',
+  },
+  hintButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',

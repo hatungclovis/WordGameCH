@@ -1,0 +1,59 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="#ffffff" rx="180"/>
+  
+  <!-- Main container -->
+  <g transform="translate(112, 200)">
+    <!-- Top row tiles (W-O-R-D) -->
+    <g>
+      <!-- W tile (correct - green) -->
+      <rect x="0" y="0" width="120" height="120" fill="#6aaa64" rx="8" stroke="#5a9a5a" stroke-width="2"/>
+      <text x="60" y="75" font-family="Arial Black, sans-serif" font-size="60" font-weight="bold" text-anchor="middle" fill="white">W</text>
+      
+      <!-- O tile (present - yellow) -->
+      <rect x="140" y="0" width="120" height="120" fill="#c9b458" rx="8" stroke="#b9a448" stroke-width="2"/>
+      <text x="200" y="75" font-family="Arial Black, sans-serif" font-size="60" font-weight="bold" text-anchor="middle" fill="white">O</text>
+      
+      <!-- R tile (correct - green) -->
+      <rect x="280" y="0" width="120" height="120" fill="#6aaa64" rx="8" stroke="#5a9a5a" stroke-width="2"/>
+      <text x="340" y="75" font-family="Arial Black, sans-serif" font-size="60" font-weight="bold" text-anchor="middle" fill="white">R</text>
+      
+      <!-- D tile (correct - green) -->
+      <rect x="420" y="0" width="120" height="120" fill="#6aaa64" rx="8" stroke="#5a9a5a" stroke-width="2"/>
+      <text x="480" y="75" font-family="Arial Black, sans-serif" font-size="60" font-weight="bold" text-anchor="middle" fill="white">D</text>
+    </g>
+    
+    <!-- Middle row tiles (G-A-M-E) -->
+    <g transform="translate(70, 140)">
+      <!-- G tile (correct - green) -->
+      <rect x="0" y="0" width="120" height="120" fill="#6aaa64" rx="8" stroke="#5a9a5a" stroke-width="2"/>
+      <text x="60" y="75" font-family="Arial Black, sans-serif" font-size="60" font-weight="bold" text-anchor="middle" fill="white">G</text>
+      
+      <!-- A tile (present - yellow) -->
+      <rect x="140" y="0" width="120" height="120" fill="#c9b458" rx="8" stroke="#b9a448" stroke-width="2"/>
+      <text x="200" y="75" font-family="Arial Black, sans-serif" font-size="60" font-weight="bold" text-anchor="middle" fill="white">A</text>
+      
+      <!-- M tile (correct - green) -->
+      <rect x="280" y="0" width="120" height="120" fill="#6aaa64" rx="8" stroke="#5a9a5a" stroke-width="2"/>
+      <text x="340" y="75" font-family="Arial Black, sans-serif" font-size="60" font-weight="bold" text-anchor="middle" fill="white">M</text>
+    </g>
+    
+    <!-- Bottom row - "CH" -->
+    <g transform="translate(140, 280)">
+      <!-- C tile (correct - green) -->
+      <rect x="0" y="0" width="120" height="120" fill="#6aaa64" rx="8" stroke="#5a9a5a" stroke-width="2"/>
+      <text x="60" y="75" font-family="Arial Black, sans-serif" font-size="60" font-weight="bold" text-anchor="middle" fill="white">C</text>
+      
+      <!-- H tile (correct - green) -->
+      <rect x="140" y="0" width="120" height="120" fill="#6aaa64" rx="8" stroke="#5a9a5a" stroke-width="2"/>
+      <text x="200" y="75" font-family="Arial Black, sans-serif" font-size="60" font-weight="bold" text-anchor="middle" fill="white">H</text>
+    </g>
+  </g>
+  
+  <!-- Subtle shadow effect -->
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="4" dy="4" stdDeviation="8" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+</svg>

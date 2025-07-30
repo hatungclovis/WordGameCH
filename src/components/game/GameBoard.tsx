@@ -1,1 +1,188 @@
-import React from 'react';\nimport {\n  View,\n  StyleSheet,\n  Dimensions,\n} from 'react-native';\nimport Tile from './Tile';\nimport { useGameStore } from '../../services/gameStore';\nimport { LetterState } from '../../types';\n\nconst { width: screenWidth } = Dimensions.get('window');\n\nexport default function GameBoard() {\n  const { \n    guesses, \n    currentGuess, \n    wordLength, \n    maxAttempts,\n    gameStatus \n  } = useGameStore();\n  \n  // Calculate tile size based on screen width and word length\n  const padding = 40;\n  const spacing = 4; // 2px margin on each side\n  const availableWidth = screenWidth - padding;\n  const tileSize = Math.min(\n    (availableWidth - (wordLength - 1) * spacing) / wordLength,\n    60\n  );\n  \n  // Create rows for the game board\n  const rows = [];\n  \n  // Add completed guesses\n  for (let i = 0; i < guesses.length; i++) {\n    const guess = guesses[i];\n    const row = [];\n    \n    for (let j = 0; j < wordLength; j++) {\n      row.push(\n        <Tile\n          key={`${i}-${j}`}\n          letter={guess.word[j]}\n          state={guess.states[j]}\n          size={tileSize}\n        />\n      );\n    }\n    \n    rows.push(\n      <View key={`row-${i}`} style={styles.row}>\n        {row}\n      </View>\n    );\n  }\n  \n  // Add current guess row (if game is still playing)\n  if (gameStatus === 'playing' && guesses.length < maxAttempts) {\n    const currentRow = [];\n    \n    for (let j = 0; j < wordLength; j++) {\n      const letter = currentGuess[j] || '';\n      currentRow.push(\n        <Tile\n          key={`current-${j}`}\n          letter={letter}\n          state=\"empty\"\n          size={tileSize}\n        />\n      );\n    }\n    \n    rows.push(\n      <View key=\"current-row\" style={styles.row}>\n        {currentRow}\n      </View>\n    );\n  }\n  \n  // Add empty rows to fill the board\n  const remainingRows = maxAttempts - rows.length;\n  for (let i = 0; i < remainingRows; i++) {\n    const emptyRow = [];\n    \n    for (let j = 0; j < wordLength; j++) {\n      emptyRow.push(\n        <Tile\n          key={`empty-${i}-${j}`}\n          state=\"empty\"\n          size={tileSize}\n        />\n      );\n    }\n    \n    rows.push(\n      <View key={`empty-row-${i}`} style={styles.row}>\n        {emptyRow}\n      </View>\n    );\n  }\n  \n  return (\n    <View style={styles.container}>\n      {rows}\n    </View>\n  );\n}\n\nconst styles = StyleSheet.create({\n  container: {\n    alignItems: 'center',\n    justifyContent: 'center',\n    paddingVertical: 20,\n  },\n  row: {\n    flexDirection: 'row',\n    marginBottom: 4,\n  },\n});\n"
+import React, { useEffect, useRef } from 'react';
+import {
+  View,
+  StyleSheet,
+  Dimensions,
+} from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSequence,
+  runOnJS,
+} from 'react-native-reanimated';
+import Tile from './Tile';
+import { useGameStore } from '../../services/gameStore';
+import { LetterState } from '../../types';
+import { triggerNotificationFeedback } from '../../utils/haptics';
+
+const { width: screenWidth } = Dimensions.get('window');
+
+export default function GameBoard() {
+  const { 
+    guesses, 
+    currentGuess, 
+    wordLength, 
+    maxAttempts,
+    gameStatus,
+    settings 
+  } = useGameStore();
+  
+  // Animation state
+  const shakeX = useSharedValue(0);
+  const lastGuessCount = useRef(guesses.length);
+  const [lastRevealedRow, setLastRevealedRow] = React.useState(-1);
+  
+  // Calculate tile size based on screen width and word length
+  const padding = 40;
+  const spacing = 4; // 2px margin on each side
+  const availableWidth = screenWidth - padding;
+  const tileSize = Math.min(
+    (availableWidth - (wordLength - 1) * spacing) / wordLength,
+    60
+  );
+  
+  // Trigger animations when new guess is made
+  useEffect(() => {
+    if (guesses.length > lastGuessCount.current) {
+      const newGuessIndex = guesses.length - 1;
+      const newGuess = guesses[newGuessIndex];
+      
+      // Trigger tile flip animations
+      setLastRevealedRow(newGuessIndex);
+      
+      // Haptic feedback based on result
+      if (settings.hapticEnabled) {
+        const hasCorrect = newGuess.states.some(state => state === 'correct');
+        const isWon = newGuess.states.every(state => state === 'correct');
+        
+        if (isWon) {
+          triggerNotificationFeedback('Success');
+        } else if (hasCorrect) {
+          triggerNotificationFeedback('Warning');
+        }
+      }
+      
+      lastGuessCount.current = guesses.length;
+    }
+  }, [guesses.length, settings.hapticEnabled]);
+  
+  // Shake animation for invalid words
+  const triggerShakeAnimation = () => {
+    shakeX.value = withSequence(
+      withTiming(-10, { duration: 50 }),
+      withTiming(10, { duration: 50 }),
+      withTiming(-10, { duration: 50 }),
+      withTiming(10, { duration: 50 }),
+      withTiming(0, { duration: 50 })
+    );
+    
+    if (settings.hapticEnabled) {
+      triggerNotificationFeedback('Error');
+    }
+  };
+  
+  // Animated style for shake effect
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: shakeX.value }],
+    };
+  });
+  
+  // Create rows for the game board
+  const rows = [];
+  
+  // Add completed guesses
+  for (let i = 0; i < guesses.length; i++) {
+    const guess = guesses[i];
+    const row = [];
+    const shouldAnimateThisRow = i === lastRevealedRow;
+    
+    for (let j = 0; j < wordLength; j++) {
+      row.push(
+        <Tile
+          key={`${i}-${j}`}
+          letter={guess.word[j]}
+          state={guess.states[j]}
+          size={tileSize}
+          shouldAnimate={shouldAnimateThisRow}
+          animationDelay={j * 100} // Stagger the animations
+        />
+      );
+    }
+    
+    rows.push(
+      <View key={`row-${i}`} style={styles.row}>
+        {row}
+      </View>
+    );
+  }
+  
+  // Add current guess row (if game is still playing)
+  if (gameStatus === 'playing' && guesses.length < maxAttempts) {
+    const currentRow = [];
+    
+    for (let j = 0; j < wordLength; j++) {
+      const letter = currentGuess[j] || '';
+      currentRow.push(
+        <Tile
+          key={`current-${j}`}
+          letter={letter}
+          state="empty"
+          size={tileSize}
+        />
+      );
+    }
+    
+    rows.push(
+      <Animated.View key="current-row" style={[styles.row, animatedStyle]}>
+        {currentRow}
+      </Animated.View>
+    );
+  }
+  
+  // Add empty rows to fill the board
+  const remainingRows = maxAttempts - rows.length;
+  for (let i = 0; i < remainingRows; i++) {
+    const emptyRow = [];
+    
+    for (let j = 0; j < wordLength; j++) {
+      emptyRow.push(
+        <Tile
+          key={`empty-${i}-${j}`}
+          state="empty"
+          size={tileSize}
+        />
+      );
+    }
+    
+    rows.push(
+      <View key={`empty-row-${i}`} style={styles.row}>
+        {emptyRow}
+      </View>
+    );
+  }
+  
+  // Expose shake function for invalid guess feedback
+  React.useImperativeHandle(null, () => ({
+    triggerShake: triggerShakeAnimation,
+  }));
+  
+  return (
+    <View style={styles.container}>
+      {rows}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  row: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+});
