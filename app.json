@@ -17,13 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hatungclovis.wordgamech",
-      "buildNumber": "1",
-      "infoPlist": {
-        "CFBundleName": "Word Game CH",
-        "CFBundleDisplayName": "Word Game CH",
-        "CFBundleShortVersionString": "1.0.0",
-        "NSUserNotificationAlertStyle": "alert"
-      }
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
