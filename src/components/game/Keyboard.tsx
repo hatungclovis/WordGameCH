@@ -48,8 +48,7 @@ export default function Keyboard() {
       updateCurrentGuess(newGuess);
     } else if (key === 'ENTER') {
       if (currentGuess.length === wordLength) {
-        const result = await makeGuess(currentGuess);
-        // makeGuess will handle clearing currentGuess on success
+        await makeGuess(currentGuess);
       }
     } else if (currentGuess.length < wordLength) {
       const newGuess = currentGuess + key;

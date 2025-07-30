@@ -25,6 +25,8 @@ interface GameStore extends GameState {
   // Game state
   isLoading: boolean;
   errorMessage: string | null;
+  toastMessage: string | null;
+  showToast: boolean;
   
   // Settings
   settings: GameSettings;
@@ -34,6 +36,10 @@ interface GameStore extends GameState {
   statistics: GameStatistics;
   updateStatistics: (gameWon: boolean, attempts: number, score: number) => void;
   resetStatistics: () => void;
+  
+  // Toast functions
+  showToastMessage: (message: string) => void;
+  hideToast: () => void;
 }
 
 const initialGameState: GameState = {
@@ -76,6 +82,8 @@ export const useGameStore = create<GameStore>()(
       ...initialGameState,
       isLoading: false,
       errorMessage: null,
+      toastMessage: null,
+      showToast: false,
       settings: initialSettings,
       statistics: initialStatistics,
 
@@ -110,6 +118,8 @@ export const useGameStore = create<GameStore>()(
             endTime: undefined,
             isLoading: false,
             errorMessage: null,
+            toastMessage: null,
+            showToast: false,
           });
         } catch (error) {
           set({ 
@@ -127,15 +137,21 @@ export const useGameStore = create<GameStore>()(
 
         // Validate guess format
         if (!GameEngine.isValidGuessFormat(guess, state.wordLength)) {
-          return { valid: false, message: `Word must be ${state.wordLength} letters long` };
+          const message = `Word must be ${state.wordLength} letters long`;
+          get().showToastMessage(message);
+          return { valid: false, message };
         }
 
         // Validate word exists in dictionary
         if (!wordService.isValidWord(guess)) {
-          return { valid: false, message: 'Not a valid word' };
+          const message = 'Not a valid English word';
+          get().showToastMessage(message);
+          // Clear the current guess so user can type a new word
+          set({ currentGuess: '' });
+          return { valid: false, message };
         }
 
-        // Process the guess
+        // Process the valid guess
         const newGuess = GameEngine.createGuess(guess, state.currentWord);
         const newGuesses = [...state.guesses, newGuess];
         const newAttemptsLeft = state.attemptsLeft - 1;
@@ -176,7 +192,17 @@ export const useGameStore = create<GameStore>()(
       },
 
       updateCurrentGuess: (guess: string) => {
+        const state = get();
+        if (state.gameStatus !== 'playing') return;
+        
         set({ currentGuess: guess });
+        
+        // Auto-submit when word is complete (regardless of validity)
+        if (guess.length === state.wordLength) {
+          setTimeout(() => {
+            get().makeGuess(guess);
+          }, 100);
+        }
       },
 
       useHint: () => {
@@ -197,6 +223,8 @@ export const useGameStore = create<GameStore>()(
       resetGame: () => {
         set({
           ...initialGameState,
+          toastMessage: null,
+          showToast: false,
           settings: get().settings,
           statistics: get().statistics,
         });
@@ -206,6 +234,18 @@ export const useGameStore = create<GameStore>()(
         set({
           settings: { ...get().settings, ...newSettings },
         });
+      },
+
+      showToastMessage: (message: string) => {
+        set({ toastMessage: message, showToast: true });
+        // Auto-hide toast after 3 seconds
+        setTimeout(() => {
+          get().hideToast();
+        }, 3000);
+      },
+
+      hideToast: () => {
+        set({ toastMessage: null, showToast: false });
       },
 
       updateStatistics: (gameWon: boolean, attempts: number, score: number) => {

@@ -11,9 +11,12 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useGameStore } from '../services/gameStore';
+import { HintData } from '../types';
 import GameBoard from '../components/game/GameBoard';
 import Keyboard from '../components/game/Keyboard';
 import GameResultModal from '../components/game/GameResultModal';
+import HintOverlay from '../components/game/HintOverlay';
+import Toast from '../components/game/Toast';
 
 type GameScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Game'>;
 type GameScreenRouteProp = RouteProp<RootStackParamList, 'Game'>;
@@ -41,6 +44,8 @@ export default function GameScreen({ navigation, route }: Props) {
   
   const { difficulty: routeDifficulty, wordLength } = route.params;
   const [showResultModal, setShowResultModal] = React.useState(false);
+  const [showHintOverlay, setShowHintOverlay] = React.useState(false);
+  const [currentHint, setCurrentHint] = React.useState<HintData | null>(null);
 
   React.useEffect(() => {
     // Initialize the game when screen loads
@@ -58,11 +63,17 @@ export default function GameScreen({ navigation, route }: Props) {
   const handleUseHint = () => {
     const hint = useHint();
     if (hint) {
-      // You could show a toast or alert here
-      console.log(`Hint: The letter "${hint.letter}" is in the word!`);
+      setCurrentHint(hint);
+      setShowHintOverlay(true);
     } else {
+      // Could show a toast/alert for no hints available
       console.log('No hints available');
     }
+  };
+  
+  const handleCloseHint = () => {
+    setShowHintOverlay(false);
+    setCurrentHint(null);
   };
 
   const handlePlayAgain = () => {
@@ -162,6 +173,16 @@ export default function GameScreen({ navigation, route }: Props) {
         onPlayAgain={handlePlayAgain}
         onGoHome={handleGoHome}
       />
+      
+      {/* Hint Overlay */}
+      <HintOverlay
+        visible={showHintOverlay}
+        hint={currentHint}
+        onClose={handleCloseHint}
+      />
+      
+      {/* Toast Notifications */}
+      <Toast />
     </SafeAreaView>
   );
 }
