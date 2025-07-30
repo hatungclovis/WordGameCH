@@ -11,7 +11,7 @@ import Animated, {
   withTiming,
   withSequence,
   withDelay,
-  runOnJS,
+  interpolateColor,
 } from 'react-native-reanimated';
 import { LetterState, COLORS } from '../../types';
 import { useGameStore } from '../../services/gameStore';
@@ -38,7 +38,7 @@ export default function Tile({
   // Animation values
   const flipRotation = useSharedValue(0);
   const scale = useSharedValue(1);
-  const opacity = useSharedValue(1);
+  const backgroundColorProgress = useSharedValue(0);
   
   // Animation trigger
   useEffect(() => {
@@ -50,6 +50,12 @@ export default function Tile({
           withTiming(90, { duration: 250 }),
           withTiming(0, { duration: 250 })
         )
+      );
+      
+      // Background color change at the flip point
+      backgroundColorProgress.value = withDelay(
+        animationDelay + 250, // At the flip point
+        withTiming(1, { duration: 0 })
       );
       
       // Subtle scale effect
@@ -73,7 +79,9 @@ export default function Tile({
     }
   }, [letter]);
   
-  const getBackgroundColor = () => {
+  // Get colors outside of animated styles (static values)
+  const emptyColor = settings.darkMode ? '#3a3a3c' : COLORS.empty;
+  const revealedColor = (() => {
     switch (state) {
       case 'correct':
         return COLORS.correct;
@@ -81,25 +89,20 @@ export default function Tile({
         return COLORS.present;
       case 'absent':
         return COLORS.absent;
-      case 'empty':
       default:
-        return settings.darkMode ? '#3a3a3c' : COLORS.empty;
+        return emptyColor;
     }
-  };
+  })();
   
-  const getBorderColor = () => {
+  const borderColor = (() => {
     if (letter && state === 'empty') {
       return settings.darkMode ? '#565656' : '#878a8c';
     }
     return settings.darkMode ? COLORS.darkBorder : COLORS.border;
-  };
+  })();
   
-  const getTextColor = () => {
-    if (state === 'empty') {
-      return settings.darkMode ? COLORS.darkText : COLORS.text;
-    }
-    return '#ffffff';
-  };
+  const emptyTextColor = settings.darkMode ? COLORS.darkText : COLORS.text;
+  const revealedTextColor = '#ffffff';
 
   // Animated styles
   const animatedStyle = useAnimatedStyle(() => {
@@ -108,92 +111,48 @@ export default function Tile({
         { rotateX: `${flipRotation.value}deg` },
         { scale: scale.value }
       ],
-      opacity: opacity.value,
+      backgroundColor: interpolateColor(
+        backgroundColorProgress.value,
+        [0, 1],
+        [emptyColor, revealedColor]
+      ),
     };
   });
 
-  // Front side style (shows during first half of flip)
-  const frontStyle = useAnimatedStyle(() => {
-    const isFlipped = flipRotation.value > 45;
+  const textStyle = useAnimatedStyle(() => {
     return {
-      opacity: isFlipped ? 0 : 1,
-      transform: [{ rotateX: `${flipRotation.value}deg` }],
-    };
-  });
-
-  // Back side style (shows during second half of flip)
-  const backStyle = useAnimatedStyle(() => {
-    const isFlipped = flipRotation.value > 45;
-    return {
-      opacity: isFlipped ? 1 : 0,
-      transform: [{ rotateX: `${flipRotation.value - 180}deg` }],
+      color: interpolateColor(
+        backgroundColorProgress.value,
+        [0, 1],
+        [emptyTextColor, revealedTextColor]
+      ),
     };
   });
 
   return (
     <Animated.View
       style={[
-        animatedStyle,
+        styles.tile,
         {
           width: size,
           height: size,
+          borderColor: borderColor,
         },
+        animatedStyle,
         style
       ]}
     >
-      {/* Front side - empty/typing state */}
-      <Animated.View
+      <Animated.Text 
         style={[
-          styles.tile,
-          frontStyle,
+          styles.letter,
           {
-            width: size,
-            height: size,
-            backgroundColor: settings.darkMode ? '#3a3a3c' : COLORS.empty,
-            borderColor: getBorderColor(),
-            position: 'absolute',
-          }
+            fontSize: size * 0.5,
+          },
+          textStyle
         ]}
       >
-        <Text 
-          style={[
-            styles.letter,
-            {
-              fontSize: size * 0.5,
-              color: getTextColor(),
-            }
-          ]}
-        >
-          {letter || ''}
-        </Text>
-      </Animated.View>
-
-      {/* Back side - revealed state */}
-      <Animated.View
-        style={[
-          styles.tile,
-          backStyle,
-          {
-            width: size,
-            height: size,
-            backgroundColor: getBackgroundColor(),
-            borderColor: getBorderColor(),
-            position: 'absolute',
-          }
-        ]}
-      >
-        <Text 
-          style={[
-            styles.letter,
-            {
-              fontSize: size * 0.5,
-              color: getTextColor(),
-            }
-          ]}
-        >
-          {letter || ''}
-        </Text>
-      </Animated.View>
+        {letter || ''}
+      </Animated.Text>
     </Animated.View>
   );
 }

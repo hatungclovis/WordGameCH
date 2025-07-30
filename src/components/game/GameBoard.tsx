@@ -4,6 +4,7 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,7 +17,7 @@ import { useGameStore } from '../../services/gameStore';
 import { LetterState } from '../../types';
 import { triggerNotificationFeedback } from '../../utils/haptics';
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function GameBoard() {
   const { 
@@ -27,6 +28,8 @@ export default function GameBoard() {
     gameStatus,
     settings 
   } = useGameStore();
+  
+  const insets = useSafeAreaInsets();
   
   // Animation state
   const shakeX = useSharedValue(0);
@@ -169,13 +172,21 @@ export default function GameBoard() {
   }));
   
   return (
-    <View style={styles.container}>
-      {rows}
+    <View style={styles.outerContainer}>
+      <View style={styles.container}>
+        {rows}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
   container: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -184,5 +195,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     marginBottom: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

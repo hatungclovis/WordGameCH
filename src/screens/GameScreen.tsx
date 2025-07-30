@@ -263,6 +263,8 @@ const styles = StyleSheet.create({
   gameArea: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
   },
   keyboardArea: {
     paddingTop: 10,
