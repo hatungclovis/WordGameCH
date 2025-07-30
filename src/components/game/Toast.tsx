@@ -45,9 +45,14 @@ export default function Toast() {
       });
       
       // Auto-hide after animation completes
+      // Show hints and game results longer than regular toasts
+      const isHint = toastMessage.includes('💡');
+      const isGameResult = toastMessage.includes('🎉') || toastMessage.includes('😔');
+      const displayTime = (isHint || isGameResult) ? 4000 : 2500;
+      
       const timeoutId = setTimeout(() => {
         hideAnimation();
-      }, 2500); // Show for 2.5 seconds, then hide
+      }, displayTime);
       
       return () => clearTimeout(timeoutId);
     } else {
@@ -116,7 +121,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 25,
-    maxWidth: screenWidth * 0.85,
+    maxWidth: screenWidth * 0.9, // Wider for hint messages
     minWidth: 120,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },

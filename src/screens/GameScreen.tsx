@@ -11,11 +11,9 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useGameStore } from '../services/gameStore';
-import { HintData } from '../types';
 import GameBoard from '../components/game/GameBoard';
 import Keyboard from '../components/game/Keyboard';
 import GameResultModal from '../components/game/GameResultModal';
-import HintOverlay from '../components/game/HintOverlay';
 import Toast from '../components/game/Toast';
 
 type GameScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Game'>;
@@ -39,13 +37,12 @@ export default function GameScreen({ navigation, route }: Props) {
     isLoading,
     errorMessage,
     difficulty,
-    wordLength: currentWordLength
+    wordLength: currentWordLength,
+    showToastMessage
   } = useGameStore();
   
   const { difficulty: routeDifficulty, wordLength } = route.params;
   const [showResultModal, setShowResultModal] = React.useState(false);
-  const [showHintOverlay, setShowHintOverlay] = React.useState(false);
-  const [currentHint, setCurrentHint] = React.useState<HintData | null>(null);
 
   React.useEffect(() => {
     // Initialize the game when screen loads
@@ -63,17 +60,15 @@ export default function GameScreen({ navigation, route }: Props) {
   const handleUseHint = () => {
     const hint = useHint();
     if (hint) {
-      setCurrentHint(hint);
-      setShowHintOverlay(true);
+      // Show hint as a centered toast message
+      const hintMessage = hint.position !== undefined 
+        ? `💡 Hint: Letter "${hint.letter.toUpperCase()}" is at position ${hint.position + 1}`
+        : `💡 Hint: Letter "${hint.letter.toUpperCase()}" is in the word`;
+      
+      showToastMessage(hintMessage);
     } else {
-      // Could show a toast/alert for no hints available
-      console.log('No hints available');
+      showToastMessage('💡 No more hints available');
     }
-  };
-  
-  const handleCloseHint = () => {
-    setShowHintOverlay(false);
-    setCurrentHint(null);
   };
 
   const handlePlayAgain = () => {
@@ -174,14 +169,7 @@ export default function GameScreen({ navigation, route }: Props) {
         onGoHome={handleGoHome}
       />
       
-      {/* Hint Overlay */}
-      <HintOverlay
-        visible={showHintOverlay}
-        hint={currentHint}
-        onClose={handleCloseHint}
-      />
-      
-      {/* Toast Notifications */}
+      {/* Toast Notifications - Now handles hints too! */}
       <Toast />
     </SafeAreaView>
   );

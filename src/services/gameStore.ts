@@ -166,9 +166,17 @@ export const useGameStore = create<GameStore>()(
         if (isWon) {
           newGameStatus = 'won';
           endTime = new Date();
+          // Show success toast
+          setTimeout(() => {
+            get().showToastMessage(`🎉 Correct! The word was "${state.currentWord.toUpperCase()}"`);
+          }, 500); // Delay to allow tile animations
         } else if (isLost) {
           newGameStatus = 'lost';
           endTime = new Date();
+          // Show failure toast
+          setTimeout(() => {
+            get().showToastMessage(`😔 The word was "${state.currentWord.toUpperCase()}"`);
+          }, 500);
         }
         
         // Calculate score
