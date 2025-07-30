@@ -4,13 +4,8 @@
     "slug": "wordgamech",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icons/icon.png",
+    "icon": "./assets/icons/app-icon.svg",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -21,7 +16,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icons/adaptive-icon.png",
+        "foregroundImage": "./assets/icons/adaptive-icon.svg",
         "backgroundColor": "#ffffff"
       },
       "package": "com.hatungclovis.wordgamech",
@@ -31,12 +26,14 @@
       ]
     },
     "web": {
-      "favicon": "./assets/icons/favicon.png",
       "bundler": "metro"
     },
-    "extra": {},
+    "extra": {
+      "eas": {
+        "projectId": "763be605-a1e6-4268-b565-cffa48e080b4"
+      }
+    },
     "owner": "hatungclovis",
-    "privacy": "public",
     "description": "Enhanced Wordle-style word guessing game with multiple difficulty levels, customizable word lengths, and comprehensive statistics tracking.",
     "githubUrl": "https://github.com/hatungclovis/WordGameCH"
   }
