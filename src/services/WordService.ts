@@ -2,192 +2,133 @@ import { getRandomWord, isValidWord, analyzeWordFrequency } from '../utils/gameU
 
 /**
  * Word Service - Manages word data and validation
- * Reads from external JSON files for comprehensive word lists
+ * 
+ * SIMPLE ARCHITECTURE:
+ * 1. Load bundled .json files (common-words.json, all-words.json) from assets/words
+ * 2. NO DOWNLOADS - pure offline operation with bundled files only
+ * 3. Show error message if files are missing or corrupted
  */
 class WordService {
-  private commonWords: string[] = [];
-  private allWords: string[] = [];
+  private commonWords: string[] = []; // Gameplay words from common-words.json
+  private allWords: string[] = [];    // Validation words from all-words.json
   private isInitialized = false;
+  private initializationError: string | null = null;
 
   /**
-   * Initialize the word service by reading from JSON files
+   * Initialize the word service
+   * Loads .json files directly from assets/words
    */
   async initialize(): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {
+      if (this.initializationError) {
+        throw new Error(this.initializationError);
+      }
+      return;
+    }
 
+    console.log('🔄 Initializing WordService...');
+    
     try {
-      // Try to load words from the JSON files
-      const [commonWordsResponse, allWordsResponse] = await Promise.all([
-        this.loadJsonFile('../../assets/words/common-words.json'),
-        this.loadJsonFile('../../assets/words/all-words.json')
+      // Load word files using direct imports (works in React Native)
+      const [commonWordsData, allWordsData] = await Promise.all([
+        this.loadCommonWords(),
+        this.loadAllWords()
       ]);
 
-      if (commonWordsResponse && allWordsResponse) {
-        this.commonWords = commonWordsResponse.filter(word => word && typeof word === 'string');
-        this.allWords = allWordsResponse.filter(word => word && typeof word === 'string');
-        
-        console.log(`Loaded ${this.commonWords.length} common words from JSON`);
-        console.log(`Loaded ${this.allWords.length} total words from JSON`);
-      } else {
-        // Fallback to embedded word list if JSON files can't be loaded
-        console.warn('JSON files not accessible, using fallback word list');
-        this.initializeFallbackWords();
+      // Validate loaded data
+      if (!commonWordsData || !Array.isArray(commonWordsData) || commonWordsData.length === 0) {
+        throw new Error('Common words file is missing, corrupted, or empty');
+      }
+
+      if (!allWordsData || !Array.isArray(allWordsData) || allWordsData.length === 0) {
+        throw new Error('All words file is missing, corrupted, or empty');
+      }
+
+      // Process and validate words
+      this.commonWords = commonWordsData
+        .filter(word => word && typeof word === 'string' && word.trim().length > 0)
+        .map(word => word.trim().toLowerCase())
+        .filter(word => /^[a-z]+$/.test(word)); // Only alphabetic characters
+
+      this.allWords = allWordsData
+        .filter(word => word && typeof word === 'string' && word.trim().length > 0)
+        .map(word => word.trim().toLowerCase())
+        .filter(word => /^[a-z]+$/.test(word)); // Only alphabetic characters
+
+      // Final validation
+      if (this.commonWords.length < 100) {
+        throw new Error(`Common words file appears corrupted: only ${this.commonWords.length} valid words found`);
+      }
+
+      if (this.allWords.length < 10000) {
+        throw new Error(`All words file appears corrupted: only ${this.allWords.length} valid words found`);
       }
 
       this.isInitialized = true;
+      this.initializationError = null;
+      
+      console.log('✅ WordService initialized successfully:', {
+        gameplayWords: this.commonWords.length,
+        validationWords: this.allWords.length
+      });
+
     } catch (error) {
-      console.error('Failed to load words from JSON files, using fallback:', error);
-      // Use fallback word list
-      this.initializeFallbackWords();
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error loading word files';
+      this.initializationError = `Word files are missing or corrupted. Please download the most updated version of the game. Error: ${errorMessage}`;
+      
+      console.error('❌ WordService initialization failed:', this.initializationError);
+      
+      // Set initialized to true to prevent repeated attempts
       this.isInitialized = true;
+      
+      throw new Error(this.initializationError);
     }
   }
 
   /**
-   * Load JSON file from assets
+   * Load common words from bundled JSON file
    */
-  private async loadJsonFile(relativePath: string): Promise<string[] | null> {
+  private async loadCommonWords(): Promise<string[] | null> {
     try {
-      // For React Native, we need to require the JSON files directly
-      // This approach works in both development and production builds
-      
-      if (relativePath.includes('common-words.json')) {
-        const commonWords = require('../../assets/words/common-words.json');
-        return Array.isArray(commonWords) ? commonWords : null;
-      } else if (relativePath.includes('all-words.json')) {
-        const allWords = require('../../assets/words/all-words.json');
-        return Array.isArray(allWords) ? allWords : null;
-      }
-      
-      return null;
+      // Import the JSON file directly (this works in React Native with bundled assets)
+      const commonWords = require('../../assets/words/common-words.json');
+      return Array.isArray(commonWords) ? commonWords : null;
     } catch (error) {
-      console.warn(`Could not load ${relativePath}:`, error);
+      console.warn('Could not load common-words.json:', error);
       return null;
     }
   }
 
   /**
-   * Initialize with fallback word list when JSON files are not accessible
+   * Load all words from bundled JSON file
    */
-  private initializeFallbackWords(): void {
-    // Basic common English words for different lengths (fallback)
-    this.commonWords = [
-      // 3-letter words
-      'cat', 'dog', 'run', 'sun', 'fun', 'car', 'boy', 'day', 'way', 'say',
-      'may', 'try', 'cry', 'dry', 'fly', 'sky', 'why', 'buy', 'guy', 'pay',
-      'lay', 'key', 'joy', 'toy', 'eye', 'bye', 'die', 'lie', 'tie', 'pie',
-      'win', 'sin', 'tin', 'bin', 'pin', 'fin', 'big', 'dig', 'fig', 'pig',
-      'wig', 'jig', 'rig', 'bad', 'sad', 'mad', 'had', 'dad', 'lad', 'pad',
-      'red', 'bed', 'led', 'fed', 'wed', 'net', 'pet', 'set', 'wet', 'get',
-      'let', 'met', 'bet', 'jet', 'yet', 'cut', 'but', 'put', 'gut', 'hut',
-      'nut', 'rut', 'bat', 'fat', 'hat', 'mat', 'pat', 'rat', 'sat',
-      'vat', 'hot', 'pot', 'dot', 'got', 'lot', 'not', 'rot', 'top', 'hop',
-      'mop', 'pop', 'cop', 'box', 'fox', 'mix', 'fix', 'six', 'tax', 'wax',
-      
-      // 4-letter words
-      'word', 'work', 'time', 'year', 'back', 'good', 'make', 'take', 'come',
-      'give', 'help', 'look', 'find', 'know', 'want', 'need', 'feel', 'seem',
-      'like', 'love', 'show', 'tell', 'call', 'talk', 'turn', 'move', 'live',
-      'play', 'hear', 'read', 'keep', 'hold', 'open', 'stop', 'walk', 'wait',
-      'hope', 'care', 'meet', 'beat', 'heat', 'seat', 'meat', 'neat', 'feet',
-      'week', 'seek', 'peek', 'deep', 'weep', 'beep', 'jeep', 'tree',
-      'free', 'knee', 'flee', 'thee', 'been', 'seen', 'teen', 'keen', 'lean',
-      'mean', 'bean', 'dean', 'jean', 'wean', 'door', 'poor', 'floor', 'soon',
-      'moon', 'noon', 'room', 'boom', 'zoom', 'doom', 'loop', 'hoop', 'poop',
-      'book', 'took', 'cook', 'hook', 'nook', 'food', 'mood',
-      'wood', 'hood', 'cool', 'pool', 'tool', 'fool', 'wool', 'boot', 'foot',
-      'root', 'loot', 'hoot', 'shot', 'slot', 'plot', 'spot', 'knot', 'boat',
-      'coat', 'goat', 'moat', 'soap', 'rope', 'cope', 'dope',
-      'pope', 'mope', 'nope', 'tape', 'cape', 'gape', 'pipe', 'ripe',
-      'wipe', 'type', 'hype', 'bike', 'hike', 'pike', 'mike',
-      'cake', 'lake', 'wake', 'bake', 'rake', 'fake', 'sake',
-      'game', 'name', 'came', 'same', 'fame', 'tame', 'lame', 'dame', 'home',
-      'dome', 'rome', 'some', 'tone', 'bone', 'cone', 'done', 'gone',
-      'lone', 'none', 'zone', 'phone', 'fire', 'hire', 'tire', 'wire', 'dire',
-      'mine', 'line', 'fine', 'wine', 'pine', 'dine', 'nine', 'vine', 'sine',
-      
-      // 5-letter words
-      'about', 'other', 'which', 'their', 'would', 'there', 'could', 'first',
-      'after', 'these', 'think', 'where', 'being', 'every', 'great', 'might',
-      'shall', 'still', 'those', 'while', 'state', 'never', 'small', 'right',
-      'place', 'means', 'again', 'house', 'world', 'three', 'years',
-      'water', 'light', 'music', 'heart', 'happy', 'woman', 'money', 'story',
-      'young', 'month', 'night', 'point', 'today', 'heard', 'white', 'least',
-      'whole', 'human', 'local', 'seems', 'begin', 'since', 'black', 'bring',
-      'group', 'early', 'party', 'learn', 'often', 'until',
-      'power', 'write', 'voice', 'peace', 'above', 'sound', 'clean',
-      'close', 'drive', 'build', 'break', 'speak', 'teach', 'watch', 'start',
-      'paper', 'phone', 'radio', 'match', 'catch', 'laugh', 'chair', 'table',
-      'board', 'horse', 'mouse', 'court', 'short', 'north', 'south',
-      'field', 'piece', 'leave', 'below', 'movie', 'store', 'style',
-      'glass', 'grass', 'class', 'cross', 'press', 'dress', 'fresh',
-      'flesh', 'guest', 'quest', 'chest', 'crest', 'frost', 'trust', 'twist',
-      'blast', 'toast', 'coast', 'beast', 'feast', 'yeast',
-      
-      // 6-letter words
-      'should', 'people', 'little', 'around', 'during', 'within',
-      'though', 'family', 'school', 'friend', 'change', 'mother', 'father',
-      'rather', 'either', 'person', 'moment', 'number', 'system', 'market',
-      'member', 'office', 'police', 'health', 'reason', 'result', 'public',
-      'really', 'simply', 'moving', 'living', 'coming', 'taking', 'making',
-      'having', 'giving', 'loving', 'trying', 'saying', 'paying', 'buying',
-      'flying', 'crying', 'dining', 'mining', 'shining', 'whining',
-      'working', 'walking', 'talking', 'looking', 'cooking', 'booking',
-      'reading', 'writing', 'playing', 'staying', 'praying', 'spraying',
-      'laying',
-    ];
-
-    // For all words, we'll include the common words plus some additional ones
-    this.allWords = [
-      ...this.commonWords,
-      // Add more validation words
-      'run', 'gun', 'bun', 'nun', 'pun', 'won', 'ton', 'son',
-      'men', 'pen', 'hen', 'den', 'ten', 'ben', 'ken', 'len', 'gen', 'yen',
-      'add', 'odd', 'cod', 'god', 'mod', 'nod', 'rod', 'sod', 'pod', 'tod',
-      'age', 'ace', 'ice', 'ore', 'are', 'use', 'due', 'rue', 'sue', 'cue',
-      'hue', 'vue', 'awe', 'owe', 'ewe', 'dew', 'few', 'hew', 'jew', 'new',
-      'pew', 'sew', 'yew', 'bow', 'cow', 'how', 'low', 'mow', 'now', 'pow',
-      'row', 'sow', 'tow', 'vow', 'wow', 'you', 'zoo', 'boo', 'coo', 'goo',
-      'moo', 'poo', 'too', 'woo', 'egg', 'beg', 'keg', 'leg', 'peg',
-      'arm', 'dam', 'ham', 'jam', 'ram', 'yam', 'dim', 'gym', 'him', 'rim',
-      'sim', 'tim', 'vim', 'hum', 'gum', 'mum', 'rum', 'sum', 'yum', 'bum',
-      'can', 'ban', 'dan', 'fan', 'man', 'pan', 'ran', 'tan', 'van', 'wan',
-      'bin', 'din', 'gin', 'kin', 'bug', 'dug', 'hug', 'jug', 'lug', 'mug', 'pug', 'rug', 'tug',
-      'art', 'eat', 'gat', 'lat', 'nat', 'oat',
-      'bit', 'fit', 'git', 'hit', 'kit', 'lit', 'pit', 'sit', 'tit', 'wit', 'zit', 'bot', 'cot',
-      'jot', 'but', 'jut', 'tut', 'axe', 'dye', 'lye', 'rye', 'lab', 'cab', 'dab', 'fab', 'gab', 'jab', 'nab',
-      'tab', 'orb', 'web', 'rib', 'bib', 'fib', 'jib', 'nib', 'sob', 'bob',
-      'cob', 'gob', 'hob', 'job', 'lob', 'mob', 'rob', 'arc', 'orc', 'bid',
-      'did', 'hid', 'kid', 'lid', 'rid', 'hod', 'mud', 'bud', 'cud', 'dud', 'pud', 'sud',
-      // Common 5-letter words that might be used for testing
-      'hello', 'world', 'apple', 'grape', 'plant', 'bread', 'dream', 'steam', 'cream', 'beach', 'teach', 'reach',
-      'dance', 'chance', 'prince', 'bridge', 'orange', 'purple',
-      'yellow', 'green', 'brown', 'clock', 'block', 'stock',
-      'truck', 'brick', 'quick', 'thick', 'stick', 'drink', 'thank',
-      'shirt', 'smart', 'sport',
-      'earth', 'worth', 'birth', 'death', 'truth', 'youth', 'laugh',
-      'tough', 'rough', 'cough', 'fight', 'sight',
-    ];
-
-    console.log(`Using fallback word list: ${this.commonWords.length} common words, ${this.allWords.length} total words`);
+  private async loadAllWords(): Promise<string[] | null> {
+    try {
+      // Import the JSON file directly (this works in React Native with bundled assets)
+      const allWords = require('../../assets/words/all-words.json');
+      return Array.isArray(allWords) ? allWords : null;
+    } catch (error) {
+      console.warn('Could not load all-words.json:', error);
+      return null;
+    }
   }
 
   /**
-   * Get words filtered by length - equivalent to Python desiredWordsList function
+   * Get words filtered by length (ONLY from common words)
    */
   getWordsByLength(length: number): string[] {
     this.ensureInitialized();
     const filteredWords = this.commonWords.filter(word => word.length === length);
     
     if (filteredWords.length === 0) {
-      throw new Error(`No common words found with length ${length}`);
+      throw new Error(`No gameplay words found with length ${length}`);
     }
     
     return filteredWords;
   }
 
   /**
-   * Get a random word of specific length - equivalent to Python secretWord function
+   * Get a random word of specific length (ONLY from common words)
    */
   getRandomWordByLength(length: number): string {
     const words = this.getWordsByLength(length);
@@ -195,15 +136,23 @@ class WordService {
   }
 
   /**
-   * Validate if a word exists in our dictionary - equivalent to Python word validation
+   * Validate if a word exists in our comprehensive dictionary
    */
   isValidWord(word: string): boolean {
     this.ensureInitialized();
-    return isValidWord(word, this.allWords);
+    
+    if (!word || typeof word !== 'string') {
+      return false;
+    }
+    
+    const normalizedWord = word.toLowerCase().trim();
+    
+    // Check against comprehensive validation dictionary
+    return this.allWords.includes(normalizedWord);
   }
 
   /**
-   * Get word frequency analysis - equivalent to Python miscellaneous functions
+   * Get word frequency analysis (from gameplay words only)
    */
   getWordAnalysis(): {
     byLength: Record<number, number>;
@@ -214,7 +163,7 @@ class WordService {
   }
 
   /**
-   * Get all common words
+   * Get all common words (gameplay words only)
    */
   getAllCommonWords(): string[] {
     this.ensureInitialized();
@@ -222,7 +171,7 @@ class WordService {
   }
 
   /**
-   * Get all words
+   * Get all words (validation dictionary)
    */
   getAllWords(): string[] {
     this.ensureInitialized();
@@ -237,6 +186,7 @@ class WordService {
     totalAllWords: number;
     lengthRange: { min: number; max: number };
     availableLengths: number[];
+    source: 'json';
   } {
     this.ensureInitialized();
     
@@ -251,11 +201,12 @@ class WordService {
         max: Math.max(...lengths),
       },
       availableLengths: uniqueLengths,
+      source: 'json',
     };
   }
 
   /**
-   * Check if word length is available in our dataset
+   * Check if word length is available in gameplay words
    */
   isWordLengthAvailable(length: number): boolean {
     this.ensureInitialized();
@@ -263,11 +214,25 @@ class WordService {
   }
 
   /**
-   * Get word count for specific length
+   * Get word count for specific length (from gameplay words)
    */
   getWordCountByLength(length: number): number {
     this.ensureInitialized();
     return this.commonWords.filter(word => word.length === length).length;
+  }
+
+  /**
+   * Check if the service has been initialized successfully
+   */
+  isServiceReady(): boolean {
+    return this.isInitialized && !this.initializationError;
+  }
+
+  /**
+   * Get initialization error message if any
+   */
+  getInitializationError(): string | null {
+    return this.initializationError;
   }
 
   /**
@@ -276,6 +241,10 @@ class WordService {
   private ensureInitialized(): void {
     if (!this.isInitialized) {
       throw new Error('WordService not initialized. Call initialize() first.');
+    }
+    
+    if (this.initializationError) {
+      throw new Error(this.initializationError);
     }
   }
 }

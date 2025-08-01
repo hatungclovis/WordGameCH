@@ -15,6 +15,7 @@ import GameBoard from '../components/game/GameBoard';
 import Keyboard from '../components/game/Keyboard';
 import GameResultModal from '../components/game/GameResultModal';
 import Toast from '../components/game/Toast';
+import ErrorScreen from '../components/ErrorScreen';
 
 type GameScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Game'>;
 type GameScreenRouteProp = RouteProp<RootStackParamList, 'Game'>;
@@ -83,6 +84,11 @@ export default function GameScreen({ navigation, route }: Props) {
     navigation.navigate('Home');
   };
 
+  const handleRetry = () => {
+    resetGame();
+    startNewGame(routeDifficulty, wordLength);
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.container, settings.darkMode && styles.darkContainer]}>
@@ -98,19 +104,11 @@ export default function GameScreen({ navigation, route }: Props) {
 
   if (errorMessage) {
     return (
-      <SafeAreaView style={[styles.container, settings.darkMode && styles.darkContainer]}>
-        <View style={styles.errorContainer}>
-          <Text style={[styles.errorText, settings.darkMode && styles.darkText]}>
-            {errorMessage}
-          </Text>
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={() => navigation.navigate('Home')}
-          >
-            <Text style={styles.retryButtonText}>Back to Home</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ErrorScreen 
+        error={errorMessage}
+        onRetry={handleRetry}
+        showRetry={!errorMessage.includes('missing or corrupted')}
+      />
     );
   }
 
@@ -236,29 +234,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#787c7e',
     marginTop: 10,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 18,
-    color: '#dc3545',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  retryButton: {
-    backgroundColor: '#6aaa64',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  retryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   gameArea: {
     flex: 1,

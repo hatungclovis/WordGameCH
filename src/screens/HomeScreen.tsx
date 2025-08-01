@@ -6,11 +6,14 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useGameStore } from '../services/gameStore';
 import { DifficultyLevel, DIFFICULTY_CONFIG, WORD_LENGTH_OPTIONS } from '../types';
+import { wordService } from '../services/WordService';
+import ErrorScreen from '../components/ErrorScreen';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -24,6 +27,26 @@ export default function HomeScreen({ navigation }: Props) {
     settings.difficulty
   );
   const [selectedWordLength, setSelectedWordLength] = React.useState(settings.wordLength);
+  const [isInitializing, setIsInitializing] = React.useState(true);
+  const [initError, setInitError] = React.useState<string | null>(null);
+
+  // Initialize word service on component mount
+  React.useEffect(() => {
+    initializeWordService();
+  }, []);
+
+  const initializeWordService = async () => {
+    try {
+      setIsInitializing(true);
+      setInitError(null);
+      await wordService.initialize();
+      setIsInitializing(false);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initialize word service';
+      setInitError(errorMessage);
+      setIsInitializing(false);
+    }
+  };
 
   const startGame = () => {
     updateSettings({
@@ -44,6 +67,34 @@ export default function HomeScreen({ navigation }: Props) {
   const navigateToSettings = () => {
     navigation.navigate('Settings');
   };
+
+  // Show loading screen while initializing
+  if (isInitializing) {
+    return (
+      <SafeAreaView style={[styles.container, settings.darkMode && styles.darkContainer]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6aaa64" />
+          <Text style={[styles.loadingText, settings.darkMode && styles.darkText]}>
+            Initializing Word Database...
+          </Text>
+          <Text style={[styles.loadingSubtext, settings.darkMode && styles.darkText]}>
+            Loading word files for the first time
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Show error screen if initialization failed
+  if (initError) {
+    return (
+      <ErrorScreen 
+        error={initError}
+        onRetry={initializeWordService}
+        showRetry={!initError.includes('missing or corrupted')}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, settings.darkMode && styles.darkContainer]}>
@@ -172,6 +223,25 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     alignItems: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#787c7e',
+    marginTop: 15,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  loadingSubtext: {
+    fontSize: 14,
+    color: '#a0a0a0',
+    marginTop: 8,
+    textAlign: 'center',
   },
   title: {
     fontSize: 32,
