@@ -8,6 +8,7 @@ import HomeScreen from '../screens/HomeScreen';
 import GameScreen from '../screens/GameScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import StatsScreen from '../screens/StatsScreen';
+import WordAnalysisScreen from '../screens/WordAnalysisScreen';
 import { useGameStore } from '../services/gameStore';
 
 export type RootStackParamList = {
@@ -18,6 +19,7 @@ export type RootStackParamList = {
   };
   Settings: undefined;
   Stats: undefined;
+  WordAnalysis: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -48,6 +50,10 @@ export default function AppNavigator() {
         <Stack.Screen
           name="Stats"
           component={StatsScreen}
+        />
+        <Stack.Screen
+          name="WordAnalysis"
+          component={WordAnalysisScreen}
         />
       </Stack.Navigator>
     </NavigationContainer>

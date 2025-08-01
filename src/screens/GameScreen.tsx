@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -132,10 +133,10 @@ export default function GameScreen({ navigation, route }: Props) {
 
   // Calculate responsive dimensions
   const headerHeight = Math.max(60, insets.top + 40);
-  const keyboardHeight = 280; // Increased keyboard height to show all 3 rows
-  const gameAreaMargin = 20; // Reduced margin slightly
-  const hintButtonHeight = 70; // Height for hint button area
-  const availableGameHeight = screenHeight - headerHeight - keyboardHeight - hintButtonHeight - (gameAreaMargin * 2) - Math.max(insets.bottom, 20);
+  const keyboardHeight = 320; // Increased keyboard height to show all 3 rows properly
+  const gameAreaMargin = 15; // Reduced margin to save space
+  const hintButtonHeight = 60; // Reduced hint button area height
+  const availableGameHeight = screenHeight - headerHeight - keyboardHeight - hintButtonHeight - (gameAreaMargin * 2) - Math.max(insets.bottom, 15);
 
   if (isLoading || isRestarting) {
     return (
@@ -199,37 +200,48 @@ export default function GameScreen({ navigation, route }: Props) {
         </View>
       </View>
 
-      {/* Game Area with Safe Margins */}
-      <View style={[
-        styles.gameArea, 
-        { 
-          marginTop: gameAreaMargin,
-          height: availableGameHeight,
-        }
-      ]}>
-        <GameBoard availableHeight={availableGameHeight} />
-      </View>
-
-      {/* Controls with Safe Area */}
-      {gameStatus === 'playing' && (
-        <View style={styles.keyboardContainer}>
-          <View style={styles.keyboardArea}>
-            <Keyboard />
-          </View>
-          
-          <View style={[
-            styles.bottomControls,
-            { paddingBottom: Math.max(insets.bottom, 20) }
-          ]}>
-            <TouchableOpacity 
-              style={[styles.hintButton, settings.darkMode && styles.darkHintButton]}
-              onPress={handleUseHint}
-            >
-              <Text style={styles.hintButtonText}>💡 Hint ({hintsUsed} used)</Text>
-            </TouchableOpacity>
-          </View>
+      {/* Scrollable Content Area */}
+      <ScrollView 
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Game Area */}
+        <View style={[
+          styles.gameArea, 
+          { 
+            marginTop: gameAreaMargin,
+            minHeight: availableGameHeight,
+          }
+        ]}>
+          <GameBoard availableHeight={availableGameHeight} />
         </View>
-      )}
+
+        {/* Controls */}
+        {gameStatus === 'playing' && (
+          <View style={styles.keyboardContainer}>
+            <View style={[
+              styles.bottomControls,
+              { paddingBottom: 10 }
+            ]}>
+              <TouchableOpacity 
+                style={[styles.hintButton, settings.darkMode && styles.darkHintButton]}
+                onPress={handleUseHint}
+              >
+                <Text style={styles.hintButtonText}>💡 Hint ({hintsUsed} used)</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.keyboardArea}>
+              <Keyboard />
+            </View>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Fixed bottom padding for safe area */}
+      <View style={{ height: Math.max(insets.bottom, 10) }} />
 
       {/* Result Modal */}
       {showResultModal && (
@@ -275,7 +287,7 @@ const styles = StyleSheet.create({
     paddingRight: 15,
   },
   backButtonText: {
-    fontSize: 20,
+    fontSize: 16,
     color: '#1a1a1b',
     fontWeight: 'bold',
   },
@@ -317,12 +329,19 @@ const styles = StyleSheet.create({
     color: '#787c7e',
     marginTop: 10,
   },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
   gameArea: {
     width: '100%',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   keyboardContainer: {
-    marginTop: gameAreaMargin,
+    marginTop: 10,
   },
   keyboardArea: {
     paddingHorizontal: 10,

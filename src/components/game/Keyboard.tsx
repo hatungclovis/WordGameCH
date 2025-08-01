@@ -135,7 +135,7 @@ export default function Keyboard() {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 5,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   currentInput: {
     alignItems: 'center',
@@ -154,14 +154,14 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   key: {
     backgroundColor: '#d3d6da',
     borderRadius: 4,
     marginHorizontal: 2,
     minWidth: (screenWidth - 60) / 10,
-    height: 48,
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
   },

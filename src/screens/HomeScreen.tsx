@@ -213,6 +213,9 @@ export default function HomeScreen({ navigation }: Props) {
           <TouchableOpacity style={styles.navButton} onPress={navigateToStats}>
             <Text style={styles.navButtonText}>📊 Statistics</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.navButton} onPress={() => navigation.navigate('WordAnalysis')}>
+            <Text style={styles.navButtonText}>📚 Word Insights</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.navButton} onPress={navigateToSettings}>
             <Text style={styles.navButtonText}>⚙️ Settings</Text>
           </TouchableOpacity>
@@ -386,15 +389,16 @@ const styles = StyleSheet.create({
   },
   navButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     width: '100%',
+    flexWrap: 'wrap',
   },
   navButton: {
     backgroundColor: '#e6e6e6',
     borderRadius: 8,
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    flex: 0.45,
+    paddingHorizontal: 16,
+    flex: 0.3,
     alignItems: 'center',
     minHeight: 44,
     justifyContent: 'center',
