@@ -1,0 +1,2 @@
+# Add Google Play Store build script
+npm run build:playstore
