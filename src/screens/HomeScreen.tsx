@@ -4,10 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useGameStore } from '../services/gameStore';
@@ -21,7 +22,10 @@ interface Props {
   navigation: HomeScreenNavigationProp;
 }
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
 export default function HomeScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { settings, updateSettings, statistics } = useGameStore();
   const [selectedDifficulty, setSelectedDifficulty] = React.useState<DifficultyLevel>(
     settings.difficulty
@@ -71,8 +75,8 @@ export default function HomeScreen({ navigation }: Props) {
   // Show loading screen while initializing
   if (isInitializing) {
     return (
-      <SafeAreaView style={[styles.container, settings.darkMode && styles.darkContainer]}>
-        <View style={styles.loadingContainer}>
+      <View style={[styles.container, settings.darkMode && styles.darkContainer]}>
+        <View style={[styles.loadingContainer, { paddingTop: insets.top + 20 }]}>
           <ActivityIndicator size="large" color="#6aaa64" />
           <Text style={[styles.loadingText, settings.darkMode && styles.darkText]}>
             Initializing Word Database...
@@ -81,7 +85,7 @@ export default function HomeScreen({ navigation }: Props) {
             Loading word files for the first time
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -97,14 +101,20 @@ export default function HomeScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={[styles.container, settings.darkMode && styles.darkContainer]}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <View style={[styles.container, settings.darkMode && styles.darkContainer]}>
+      <ScrollView 
+        contentContainerStyle={[
+          styles.content,
+          { 
+            paddingTop: insets.top + 20,
+            paddingBottom: Math.max(insets.bottom, 20),
+          }
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Title */}
         <Text style={[styles.title, settings.darkMode && styles.darkText]}>
           Word Game CH
-        </Text>
-        <Text style={[styles.subtitle, settings.darkMode && styles.darkText]}>
-          Enhanced Version
         </Text>
 
         {/* Quick Stats */}
@@ -208,7 +218,7 @@ export default function HomeScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -221,14 +231,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1b',
   },
   content: {
-    padding: 20,
+    paddingHorizontal: 20,
     alignItems: 'center',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
   },
   loadingText: {
     fontSize: 18,
@@ -244,15 +254,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   title: {
-    fontSize: 32,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1a1a1b',
-    marginBottom: 5,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#787c7e',
     marginBottom: 30,
+    textAlign: 'center',
   },
   darkText: {
     color: '#ffffff',
@@ -321,20 +327,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#d3d6da',
+    minHeight: 60,
+    justifyContent: 'center',
   },
   selectedButton: {
     backgroundColor: '#6aaa64',
     borderColor: '#6aaa64',
   },
   difficultyText: {
-    fontSize: 16,
+    fontSize: Math.min(screenWidth * 0.04, 16),
     fontWeight: '600',
     color: '#1a1a1b',
+    textAlign: 'center',
   },
   attemptsText: {
-    fontSize: 12,
+    fontSize: Math.min(screenWidth * 0.03, 12),
     color: '#787c7e',
     marginTop: 2,
+    textAlign: 'center',
   },
   selectedText: {
     color: '#ffffff',
@@ -351,7 +361,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     borderWidth: 2,
     borderColor: '#d3d6da',
-    minWidth: 50,
+    minWidth: Math.max(screenWidth * 0.12, 50),
     alignItems: 'center',
   },
   wordLengthText: {
@@ -367,6 +377,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     width: '100%',
     alignItems: 'center',
+    minHeight: 50,
   },
   startButtonText: {
     color: '#ffffff',
@@ -385,9 +396,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     flex: 0.45,
     alignItems: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
   },
   navButtonText: {
-    fontSize: 16,
+    fontSize: Math.min(screenWidth * 0.04, 16),
     color: '#1a1a1b',
     fontWeight: '500',
   },

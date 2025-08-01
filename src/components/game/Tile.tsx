@@ -40,6 +40,9 @@ export default function Tile({
   const scale = useSharedValue(1);
   const backgroundColorProgress = useSharedValue(0);
   
+  // Calculate responsive margins based on tile size
+  const tileMargin = Math.max(size * 0.04, 2); // Margin scales with tile size, minimum 2px
+  
   // Animation trigger
   useEffect(() => {
     if (shouldAnimate && letter) {
@@ -137,6 +140,7 @@ export default function Tile({
           width: size,
           height: size,
           borderColor: borderColor,
+          margin: tileMargin, // Responsive margin
         },
         animatedStyle,
         style
@@ -146,7 +150,7 @@ export default function Tile({
         style={[
           styles.letter,
           {
-            fontSize: size * 0.5,
+            fontSize: size * 0.5, // Font size scales with tile size
           },
           textStyle
         ]}
@@ -163,7 +167,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
-    margin: 2,
   },
   letter: {
     fontWeight: 'bold',

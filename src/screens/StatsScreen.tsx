@@ -3,10 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useGameStore } from '../services/gameStore';
@@ -17,8 +18,13 @@ interface Props {
   navigation: StatsScreenNavigationProp;
 }
 
+const { width: screenWidth } = Dimensions.get('window');
+
 export default function StatsScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { settings, statistics } = useGameStore();
+
+  const headerHeight = Math.max(60, insets.top + 40);
 
   const StatCard = ({ title, value, subtitle }: { title: string; value: string | number; subtitle?: string }) => (
     <View style={[styles.statCard, settings.darkMode && styles.darkCard]}>
@@ -37,12 +43,40 @@ export default function StatsScreen({ navigation }: Props) {
   );
 
   return (
-    <SafeAreaView style={[styles.container, settings.darkMode && styles.darkContainer]}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.title, settings.darkMode && styles.darkText]}>
-          Your Statistics
-        </Text>
+    <View style={[styles.container, settings.darkMode && styles.darkContainer]}>
+      {/* Custom Header with Safe Area */}
+      <View style={[
+        styles.header, 
+        settings.darkMode && styles.darkHeader,
+        { 
+          paddingTop: insets.top + 10,
+          minHeight: headerHeight,
+        }
+      ]}>
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={[styles.backButtonText, settings.darkMode && styles.darkText]}>← Back</Text>
+          </TouchableOpacity>
+          
+          <Text style={[styles.headerTitle, settings.darkMode && styles.darkText]}>
+            Statistics
+          </Text>
+          
+          <View style={styles.spacer} />
+        </View>
+      </View>
 
+      <ScrollView 
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(insets.bottom, 20) }
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {statistics.gamesPlayed === 0 ? (
           <View style={styles.emptyState}>
             <Text style={[styles.emptyText, settings.darkMode && styles.darkText]}>
@@ -138,7 +172,7 @@ export default function StatsScreen({ navigation }: Props) {
           </>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -150,15 +184,43 @@ const styles = StyleSheet.create({
   darkContainer: {
     backgroundColor: '#1a1a1b',
   },
-  content: {
-    padding: 20,
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e5e5',
+    backgroundColor: '#ffffff',
+    justifyContent: 'flex-end',
   },
-  title: {
-    fontSize: 28,
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'baseline', // Changed from 'center' to 'baseline' for text alignment
+    height: 44,
+  },
+  darkHeader: {
+    borderBottomColor: '#3a3a3c',
+    backgroundColor: '#1a1a1b',
+  },
+  backButton: {
+    paddingRight: 15,
+  },
+  backButtonText: {
+    fontSize: 20,
+    color: '#1a1a1b',
+    fontWeight: 'bold',
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1a1a1b',
-    marginBottom: 30,
     textAlign: 'center',
+  },
+  spacer: {
+    width: 60, // Same width as back button to center title
+  },
+  content: {
+    padding: 20,
   },
   darkText: {
     color: '#ffffff',
@@ -172,6 +234,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1a1a1b',
     marginBottom: 10,
+    textAlign: 'center',
   },
   emptySubtext: {
     fontSize: 16,
@@ -184,6 +247,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 32,
+    minHeight: 50,
   },
   playButtonText: {
     color: '#ffffff',
@@ -203,18 +267,20 @@ const styles = StyleSheet.create({
     width: '48%',
     alignItems: 'center',
     marginBottom: 15,
+    minHeight: 80,
+    justifyContent: 'center',
   },
   darkCard: {
     backgroundColor: '#2a2a2c',
   },
   statValue: {
-    fontSize: 32,
+    fontSize: Math.min(screenWidth * 0.08, 32),
     fontWeight: 'bold',
     color: '#6aaa64',
     marginBottom: 5,
   },
   statTitle: {
-    fontSize: 14,
+    fontSize: Math.min(screenWidth * 0.035, 14),
     color: '#787c7e',
     textAlign: 'center',
   },
@@ -238,10 +304,12 @@ const styles = StyleSheet.create({
   scoreRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
   },
   scoreLabel: {
-    fontSize: 16,
+    fontSize: Math.min(screenWidth * 0.04, 16),
     color: '#1a1a1b',
+    marginBottom: 5,
   },
   noDataText: {
     fontSize: 16,
@@ -288,6 +356,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 10,
+    minHeight: 50,
   },
   playAgainText: {
     color: '#ffffff',

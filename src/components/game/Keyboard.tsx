@@ -134,18 +134,18 @@ export default function Keyboard() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 8,
-    paddingBottom: 20,
+    paddingHorizontal: 5,
+    paddingVertical: 10,
   },
   currentInput: {
     alignItems: 'center',
-    marginBottom: 20,
-    padding: 15,
+    marginBottom: 15,
+    paddingVertical: 10,
   },
   inputText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    letterSpacing: 8,
+    letterSpacing: 6,
     color: '#1a1a1b',
   },
   darkText: {
@@ -154,26 +154,26 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   key: {
     backgroundColor: '#d3d6da',
     borderRadius: 4,
-    marginHorizontal: 3,
-    minWidth: (screenWidth - 80) / 10,
-    height: 58,
+    marginHorizontal: 2,
+    minWidth: (screenWidth - 60) / 10,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
   },
   specialKey: {
-    minWidth: (screenWidth - 80) / 6.5,
+    minWidth: (screenWidth - 60) / 6.5,
   },
   keyText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#1a1a1b',
   },
   specialKeyText: {
-    fontSize: 12,
+    fontSize: 11,
   },
 });

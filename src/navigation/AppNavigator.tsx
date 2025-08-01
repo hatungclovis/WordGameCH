@@ -30,48 +30,24 @@ export default function AppNavigator() {
       <StatusBar style={settings.darkMode ? 'light' : 'dark'} />
       <Stack.Navigator
         screenOptions={{
-          headerStyle: {
-            backgroundColor: settings.darkMode ? '#1a1a1b' : '#ffffff',
-          },
-          headerTintColor: settings.darkMode ? '#ffffff' : '#1a1a1b',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-            fontSize: 18,
-          },
+          headerShown: false, // This removes all headers
         }}
       >
         <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{
-            title: 'Word Game CH',
-            headerTitleAlign: 'center',
-          }}
         />
         <Stack.Screen
           name="Game"
           component={GameScreen}
-          options={{
-            title: 'Playing',
-            headerTitleAlign: 'center',
-            headerBackTitleVisible: false,
-          }}
         />
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}
-          options={{
-            title: 'Settings',
-            headerTitleAlign: 'center',
-          }}
         />
         <Stack.Screen
           name="Stats"
           component={StatsScreen}
-          options={{
-            title: 'Statistics',
-            headerTitleAlign: 'center',
-          }}
         />
       </Stack.Navigator>
     </NavigationContainer>

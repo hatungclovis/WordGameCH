@@ -16,7 +16,6 @@ import Animated, {
   withSequence,
   withDelay,
   withTiming,
-  runOnJS,
 } from 'react-native-reanimated';
 import { useGameStore } from '../../services/gameStore';
 import { triggerNotificationFeedback } from '../../utils/haptics';
@@ -37,9 +36,14 @@ export default function GameResultModal({ visible, onPlayAgain, onGoHome }: Game
   const opacity = useSharedValue(0);
   const confettiOpacity = useSharedValue(0);
   
+  // Local state to prevent multiple button presses
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  
   // Trigger animations when modal becomes visible
   React.useEffect(() => {
     if (visible) {
+      setIsProcessing(false); // Reset processing state when modal opens
+      
       // Modal entrance animation
       opacity.value = withTiming(1, { duration: 200 });
       scale.value = withSequence(
@@ -99,7 +103,21 @@ export default function GameResultModal({ visible, onPlayAgain, onGoHome }: Game
     return `The word was "${currentWord.toUpperCase()}"`;
   };
   
+  const handlePlayAgain = React.useCallback(() => {
+    if (isProcessing) return; // Prevent multiple clicks
+    setIsProcessing(true);
+    onPlayAgain();
+  }, [isProcessing, onPlayAgain]);
+  
+  const handleGoHome = React.useCallback(() => {
+    if (isProcessing) return; // Prevent multiple clicks
+    setIsProcessing(true);
+    onGoHome();
+  }, [isProcessing, onGoHome]);
+  
   const shareResults = async () => {
+    if (isProcessing) return; // Prevent multiple clicks during processing
+    
     try {
       const grid = guesses.map(guess => 
         guess.states.map(state => {
@@ -125,12 +143,18 @@ export default function GameResultModal({ visible, onPlayAgain, onGoHome }: Game
     }
   };
   
+  // Don't render modal content if not visible
+  if (!visible) {
+    return null;
+  }
+  
   return (
     <Modal
       visible={visible}
       transparent
       animationType="none"
       statusBarTranslucent
+      onRequestClose={() => {}} // Prevent hardware back button from closing
     >
       <View style={styles.overlay}>
         {/* Confetti Effect */}
@@ -178,22 +202,37 @@ export default function GameResultModal({ visible, onPlayAgain, onGoHome }: Game
             <TouchableOpacity 
               style={[styles.button, styles.shareButton]} 
               onPress={shareResults}
+              disabled={isProcessing}
             >
               <Text style={styles.shareButtonText}>📤 Share</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[styles.button, styles.playAgainButton]} 
-              onPress={onPlayAgain}
+              style={[
+                styles.button, 
+                styles.playAgainButton,
+                isProcessing && styles.disabledButton
+              ]} 
+              onPress={handlePlayAgain}
+              disabled={isProcessing}
             >
-              <Text style={styles.playAgainButtonText}>🎮 Play Again</Text>
+              <Text style={styles.playAgainButtonText}>
+                {isProcessing ? '🔄 Starting...' : '🎮 Play Again'}
+              </Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[styles.button, styles.homeButton]} 
-              onPress={onGoHome}
+              style={[
+                styles.button, 
+                styles.homeButton,
+                isProcessing && styles.disabledButton
+              ]} 
+              onPress={handleGoHome}
+              disabled={isProcessing}
             >
-              <Text style={[styles.homeButtonText, settings.darkMode && styles.darkText]}>🏠 Home</Text>
+              <Text style={[styles.homeButtonText, settings.darkMode && styles.darkText]}>
+                🏠 Home
+              </Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -298,6 +337,9 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
     alignItems: 'center',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   shareButton: {
     backgroundColor: '#6aaa64',

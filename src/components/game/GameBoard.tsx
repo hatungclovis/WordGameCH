@@ -19,7 +19,11 @@ import { triggerNotificationFeedback } from '../../utils/haptics';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-export default function GameBoard() {
+interface GameBoardProps {
+  availableHeight?: number;
+}
+
+export default function GameBoard({ availableHeight }: GameBoardProps) {
   const { 
     guesses, 
     currentGuess, 
@@ -29,21 +33,62 @@ export default function GameBoard() {
     settings 
   } = useGameStore();
   
-  const insets = useSafeAreaInsets();
-  
   // Animation state
   const shakeX = useSharedValue(0);
   const lastGuessCount = useRef(guesses.length);
   const [lastRevealedRow, setLastRevealedRow] = React.useState(-1);
   
-  // Calculate tile size based on screen width and word length
-  const padding = 40;
-  const spacing = 4; // 2px margin on each side
-  const availableWidth = screenWidth - padding;
-  const tileSize = Math.min(
-    (availableWidth - (wordLength - 1) * spacing) / wordLength,
-    60
-  );
+  // Responsive tile size calculation with proper auto-layout
+  const calculateResponsiveSizes = () => {
+    const horizontalPadding = 40; // Total padding on both sides
+    const tileSpacing = 4; // Space between tiles
+    const availableWidth = screenWidth - horizontalPadding;
+    
+    // Calculate base tile size based on available width
+    const maxTileSizeByWidth = (availableWidth - (wordLength - 1) * tileSpacing) / wordLength;
+    
+    // Start with a reasonable tile size based on available height
+    let tileSize = maxTileSizeByWidth;
+    let rowSpacing = 4;
+    
+    // If we have available height constraint, calculate optimal size
+    if (availableHeight && availableHeight > 0) {
+      // Calculate the maximum tile size that fits within available height
+      const minRowSpacing = 3;
+      const maxTileSizeByHeight = (availableHeight - (minRowSpacing * (maxAttempts - 1))) / maxAttempts;
+      
+      // Use the smaller of width-constrained or height-constrained size
+      tileSize = Math.min(maxTileSizeByWidth, maxTileSizeByHeight);
+      
+      // Ensure minimum size for readability, but not too small
+      tileSize = Math.max(tileSize, 20);
+      
+      // Calculate proportional row spacing
+      rowSpacing = Math.max(tileSize * 0.06, 3);
+      
+      // Double-check that everything fits
+      const totalRequiredHeight = (tileSize * maxAttempts) + (rowSpacing * (maxAttempts - 1));
+      if (totalRequiredHeight > availableHeight) {
+        // Recalculate with tighter constraints
+        tileSize = (availableHeight - (minRowSpacing * (maxAttempts - 1))) / maxAttempts;
+        tileSize = Math.max(tileSize, 18); // Absolute minimum
+        rowSpacing = minRowSpacing;
+      }
+    } else {
+      // No height constraint, use reasonable defaults based on word length
+      const maxSizes = {
+        3: 70, 4: 65, 5: 60, 6: 50, 7: 45, 8: 40, 9: 35
+      };
+      const maxSize = maxSizes[wordLength as keyof typeof maxSizes] || 30;
+      tileSize = Math.min(maxTileSizeByWidth, maxSize);
+      tileSize = Math.max(tileSize, 20);
+      rowSpacing = Math.max(tileSize * 0.08, 4);
+    }
+    
+    return { tileSize, rowSpacing };
+  };
+  
+  const { tileSize, rowSpacing } = calculateResponsiveSizes();
   
   // Trigger animations when new guess is made
   useEffect(() => {
@@ -115,7 +160,7 @@ export default function GameBoard() {
     }
     
     rows.push(
-      <View key={`row-${i}`} style={styles.row}>
+      <View key={`row-${i}`} style={[styles.row, { marginBottom: rowSpacing }]}>
         {row}
       </View>
     );
@@ -138,7 +183,7 @@ export default function GameBoard() {
     }
     
     rows.push(
-      <Animated.View key="current-row" style={[styles.row, animatedStyle]}>
+      <Animated.View key="current-row" style={[styles.row, { marginBottom: rowSpacing }, animatedStyle]}>
         {currentRow}
       </Animated.View>
     );
@@ -160,7 +205,7 @@ export default function GameBoard() {
     }
     
     rows.push(
-      <View key={`empty-row-${i}`} style={styles.row}>
+      <View key={`empty-row-${i}`} style={[styles.row, { marginBottom: i === remainingRows - 1 ? 0 : rowSpacing }]}>
         {emptyRow}
       </View>
     );
@@ -172,8 +217,11 @@ export default function GameBoard() {
   }));
   
   return (
-    <View style={styles.outerContainer}>
-      <View style={styles.container}>
+    <View style={styles.container}>
+      <View style={[
+        styles.gameBoard,
+        availableHeight && { maxHeight: availableHeight }
+      ]}>
         {rows}
       </View>
     </View>
@@ -181,20 +229,18 @@ export default function GameBoard() {
 }
 
 const styles = StyleSheet.create({
-  outerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-  },
   container: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gameBoard: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
   },
   row: {
     flexDirection: 'row',
-    marginBottom: 4,
     justifyContent: 'center',
     alignItems: 'center',
   },

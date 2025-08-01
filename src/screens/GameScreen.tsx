@@ -6,7 +6,9 @@ import {
   SafeAreaView,
   ActivityIndicator,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -25,7 +27,10 @@ interface Props {
   route: GameScreenRouteProp;
 }
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
 export default function GameScreen({ navigation, route }: Props) {
+  const insets = useSafeAreaInsets();
   const { 
     settings, 
     startNewGame, 
@@ -44,6 +49,7 @@ export default function GameScreen({ navigation, route }: Props) {
   
   const { difficulty: routeDifficulty, wordLength } = route.params;
   const [showResultModal, setShowResultModal] = React.useState(false);
+  const [isRestarting, setIsRestarting] = React.useState(false);
 
   React.useEffect(() => {
     // Initialize the game when screen loads
@@ -54,7 +60,8 @@ export default function GameScreen({ navigation, route }: Props) {
   React.useEffect(() => {
     if (gameStatus === 'won' || gameStatus === 'lost') {
       // Delay to allow final animation to complete
-      setTimeout(() => setShowResultModal(true), 1500);
+      const timer = setTimeout(() => setShowResultModal(true), 1500);
+      return () => clearTimeout(timer);
     }
   }, [gameStatus]);
 
@@ -72,33 +79,74 @@ export default function GameScreen({ navigation, route }: Props) {
     }
   };
 
-  const handlePlayAgain = () => {
-    setShowResultModal(false);
-    resetGame();
-    startNewGame(routeDifficulty, wordLength);
-  };
+  const handlePlayAgain = React.useCallback(async () => {
+    try {
+      // Prevent multiple clicks
+      if (isRestarting) return;
+      setIsRestarting(true);
+      
+      // Step 1: Close modal first
+      setShowResultModal(false);
+      
+      // Step 2: Wait for modal to close completely
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Step 3: Reset game state
+      resetGame();
+      
+      // Step 4: Wait a bit more for state to settle
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Step 5: Start new game
+      await startNewGame(routeDifficulty, wordLength);
+      
+    } catch (error) {
+      console.error('Error restarting game:', error);
+    } finally {
+      setIsRestarting(false);
+    }
+  }, [isRestarting, routeDifficulty, wordLength, resetGame, startNewGame]);
 
-  const handleGoHome = () => {
-    setShowResultModal(false);
-    resetGame();
-    navigation.navigate('Home');
-  };
+  const handleGoHome = React.useCallback(async () => {
+    try {
+      // Close modal first
+      setShowResultModal(false);
+      
+      // Wait for modal to close
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Reset game state
+      resetGame();
+      
+      // Navigate to home
+      navigation.navigate('Home');
+    } catch (error) {
+      console.error('Error going home:', error);
+    }
+  }, [resetGame, navigation]);
 
   const handleRetry = () => {
     resetGame();
     startNewGame(routeDifficulty, wordLength);
   };
 
-  if (isLoading) {
+  // Calculate responsive dimensions
+  const headerHeight = Math.max(60, insets.top + 40);
+  const keyboardHeight = 280; // Increased keyboard height to show all 3 rows
+  const gameAreaMargin = 20; // Reduced margin slightly
+  const hintButtonHeight = 70; // Height for hint button area
+  const availableGameHeight = screenHeight - headerHeight - keyboardHeight - hintButtonHeight - (gameAreaMargin * 2) - Math.max(insets.bottom, 20);
+
+  if (isLoading || isRestarting) {
     return (
-      <SafeAreaView style={[styles.container, settings.darkMode && styles.darkContainer]}>
-        <View style={styles.loadingContainer}>
+      <View style={[styles.container, settings.darkMode && styles.darkContainer]}>
+        <View style={[styles.loadingContainer, { paddingTop: insets.top + 20 }]}>
           <ActivityIndicator size="large" color="#6aaa64" />
           <Text style={[styles.loadingText, settings.darkMode && styles.darkText]}>
-            Loading game...
+            {isRestarting ? 'Starting new game...' : 'Loading game...'}
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -113,43 +161,66 @@ export default function GameScreen({ navigation, route }: Props) {
   }
 
   return (
-    <SafeAreaView style={[styles.container, settings.darkMode && styles.darkContainer]}>
-      {/* Header */}
-      <View style={[styles.header, settings.darkMode && styles.darkHeader]}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={[styles.backButtonText, settings.darkMode && styles.darkText]}>← Back</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.headerCenter}>
-          <Text style={[styles.difficultyText, settings.darkMode && styles.darkText]}>
-            {routeDifficulty.toUpperCase()} • {wordLength} letters
-          </Text>
-          <Text style={[styles.scoreText, settings.darkMode && styles.darkSubtitle]}>
-            Score: {score} • Attempts: {attemptsLeft}
-          </Text>
-        </View>
-        
-        <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => navigation.navigate('Stats')}>
-            <Text style={[styles.statsButton, settings.darkMode && styles.darkText]}>📊</Text>
+    <View style={[styles.container, settings.darkMode && styles.darkContainer]}>
+      {/* Custom Header with Safe Area */}
+      <View style={[
+        styles.header, 
+        settings.darkMode && styles.darkHeader,
+        { 
+          paddingTop: insets.top + 10,
+          minHeight: headerHeight,
+        }
+      ]}>
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={[styles.backButtonText, settings.darkMode && styles.darkText]}>← Back</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.gameInfo}>
+            <Text style={[styles.difficultyText, settings.darkMode && styles.darkText]}>
+              {routeDifficulty.toUpperCase()} • {wordLength} letters
+            </Text>
+            <Text style={[styles.scoreText, settings.darkMode && styles.darkSubtitle]}>
+              Score: {score} • Attempts: {attemptsLeft}
+            </Text>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.statsButton}
+            onPress={() => navigation.navigate('Stats')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.statsButtonText}>📊</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Game Area */}
-      <View style={styles.gameArea}>
-        <GameBoard />
+      {/* Game Area with Safe Margins */}
+      <View style={[
+        styles.gameArea, 
+        { 
+          marginTop: gameAreaMargin,
+          height: availableGameHeight,
+        }
+      ]}>
+        <GameBoard availableHeight={availableGameHeight} />
       </View>
 
-      {/* Controls */}
+      {/* Controls with Safe Area */}
       {gameStatus === 'playing' && (
-        <View style={styles.keyboardArea}>
-          <Keyboard />
+        <View style={styles.keyboardContainer}>
+          <View style={styles.keyboardArea}>
+            <Keyboard />
+          </View>
           
-          <View style={styles.bottomControls}>
+          <View style={[
+            styles.bottomControls,
+            { paddingBottom: Math.max(insets.bottom, 20) }
+          ]}>
             <TouchableOpacity 
               style={[styles.hintButton, settings.darkMode && styles.darkHintButton]}
               onPress={handleUseHint}
@@ -161,15 +232,17 @@ export default function GameScreen({ navigation, route }: Props) {
       )}
 
       {/* Result Modal */}
-      <GameResultModal
-        visible={showResultModal}
-        onPlayAgain={handlePlayAgain}
-        onGoHome={handleGoHome}
-      />
+      {showResultModal && (
+        <GameResultModal
+          visible={showResultModal}
+          onPlayAgain={handlePlayAgain}
+          onGoHome={handleGoHome}
+        />
+      )}
       
-      {/* Toast Notifications - Now handles hints too! */}
+      {/* Toast Notifications */}
       <Toast />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -182,35 +255,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1b',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e5e5',
+    backgroundColor: '#ffffff',
+    justifyContent: 'flex-end',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'baseline', // Changed from 'center' to 'baseline' for text alignment
+    height: 44,
   },
   darkHeader: {
     borderBottomColor: '#3a3a3c',
+    backgroundColor: '#1a1a1b',
   },
   backButton: {
-    flex: 1,
+    paddingRight: 15,
   },
   backButtonText: {
-    fontSize: 16,
-    color: '#6aaa64',
-    fontWeight: '600',
+    fontSize: 20,
+    color: '#1a1a1b',
+    fontWeight: 'bold',
   },
-  headerCenter: {
-    flex: 2,
+  gameInfo: {
+    flex: 1,
     alignItems: 'center',
   },
-  headerRight: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
   difficultyText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: 'bold',
     color: '#1a1a1b',
     marginBottom: 2,
   },
@@ -221,7 +296,14 @@ const styles = StyleSheet.create({
   darkSubtitle: {
     color: '#a0a0a0',
   },
+  darkText: {
+    color: '#ffffff',
+  },
   statsButton: {
+    paddingVertical: 8,
+    paddingLeft: 15,
+  },
+  statsButtonText: {
     fontSize: 18,
     color: '#6aaa64',
   },
@@ -236,19 +318,21 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   gameArea: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     width: '100%',
+    paddingHorizontal: 20,
+  },
+  keyboardContainer: {
+    marginTop: gameAreaMargin,
   },
   keyboardArea: {
-    paddingTop: 10,
+    paddingHorizontal: 10,
   },
   bottomControls: {
     flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingTop: 15,
+    paddingBottom: 5,
   },
   hintButton: {
     backgroundColor: '#c9b458',
@@ -268,8 +352,5 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  darkText: {
-    color: '#ffffff',
   },
 });

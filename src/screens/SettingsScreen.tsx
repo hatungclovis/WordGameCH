@@ -3,11 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Switch,
+  Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useGameStore } from '../services/gameStore';
@@ -18,8 +19,13 @@ interface Props {
   navigation: SettingsScreenNavigationProp;
 }
 
+const { width: screenWidth } = Dimensions.get('window');
+
 export default function SettingsScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { settings, updateSettings, resetStatistics } = useGameStore();
+
+  const headerHeight = Math.max(60, insets.top + 40);
 
   const toggleDarkMode = () => {
     updateSettings({ darkMode: !settings.darkMode });
@@ -39,12 +45,40 @@ export default function SettingsScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={[styles.container, settings.darkMode && styles.darkContainer]}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.title, settings.darkMode && styles.darkText]}>
-          Settings
-        </Text>
+    <View style={[styles.container, settings.darkMode && styles.darkContainer]}>
+      {/* Custom Header with Safe Area */}
+      <View style={[
+        styles.header, 
+        settings.darkMode && styles.darkHeader,
+        { 
+          paddingTop: insets.top + 10,
+          minHeight: headerHeight,
+        }
+      ]}>
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={[styles.backButtonText, settings.darkMode && styles.darkText]}>← Back</Text>
+          </TouchableOpacity>
+          
+          <Text style={[styles.headerTitle, settings.darkMode && styles.darkText]}>
+            Settings
+          </Text>
+          
+          <View style={styles.spacer} />
+        </View>
+      </View>
 
+      <ScrollView 
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(insets.bottom, 20) }
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Display Settings */}
         <View style={[styles.section, settings.darkMode && styles.darkCard]}>
           <Text style={[styles.sectionTitle, settings.darkMode && styles.darkText]}>
@@ -112,7 +146,7 @@ export default function SettingsScreen({ navigation }: Props) {
             About
           </Text>
           <Text style={[styles.infoText, settings.darkMode && styles.darkText]}>
-            Word Game CH - Enhanced Version
+            Word Game CH
           </Text>
           <Text style={[styles.infoText, settings.darkMode && styles.darkText]}>
             Version 1.0.0
@@ -122,7 +156,7 @@ export default function SettingsScreen({ navigation }: Props) {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -134,15 +168,43 @@ const styles = StyleSheet.create({
   darkContainer: {
     backgroundColor: '#1a1a1b',
   },
-  content: {
-    padding: 20,
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e5e5',
+    backgroundColor: '#ffffff',
+    justifyContent: 'flex-end',
   },
-  title: {
-    fontSize: 28,
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'baseline', // Changed from 'center' to 'baseline' for text alignment
+    height: 44,
+  },
+  darkHeader: {
+    borderBottomColor: '#3a3a3c',
+    backgroundColor: '#1a1a1b',
+  },
+  backButton: {
+    paddingRight: 15,
+  },
+  backButtonText: {
+    fontSize: 20,
+    color: '#1a1a1b',
+    fontWeight: 'bold',
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1a1a1b',
-    marginBottom: 30,
     textAlign: 'center',
+  },
+  spacer: {
+    width: 60, // Same width as back button to center title
+  },
+  content: {
+    padding: 20,
   },
   darkText: {
     color: '#ffffff',
@@ -167,10 +229,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
+    minHeight: 44, // Minimum touch target
   },
   settingLabel: {
-    fontSize: 16,
+    fontSize: Math.min(screenWidth * 0.04, 16),
     color: '#1a1a1b',
+    flex: 1,
   },
   resetButton: {
     backgroundColor: '#dc3545',
@@ -178,6 +242,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     alignItems: 'center',
+    minHeight: 44,
   },
   resetButtonText: {
     color: '#ffffff',
