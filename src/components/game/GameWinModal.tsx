@@ -20,7 +20,7 @@ import Animated, {
 import { useGameStore } from '../../services/gameStore';
 import { triggerNotificationFeedback } from '../../utils/haptics';
 
-interface GameResultModalProps {
+interface GameWinModalProps {
   visible: boolean;
   onPlayAgain: () => void;
   onGoHome: () => void;
@@ -28,8 +28,8 @@ interface GameResultModalProps {
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-export default function GameResultModal({ visible, onPlayAgain, onGoHome }: GameResultModalProps) {
-  const { gameStatus, score, currentWord, guesses, statistics, settings } = useGameStore();
+export default function GameWinModal({ visible, onPlayAgain, onGoHome }: GameWinModalProps) {
+  const { score, currentWord, guesses, statistics, settings } = useGameStore();
   
   // Animation values
   const scale = useSharedValue(0);
@@ -52,23 +52,21 @@ export default function GameResultModal({ visible, onPlayAgain, onGoHome }: Game
       );
       
       // Celebration animation for wins
-      if (gameStatus === 'won') {
-        confettiOpacity.value = withSequence(
-          withDelay(300, withTiming(1, { duration: 500 })),
-          withDelay(2000, withTiming(0, { duration: 1000 }))
-        );
-        
-        // Haptic celebration
-        if (settings.hapticEnabled) {
-          setTimeout(() => triggerNotificationFeedback('Success'), 300);
-        }
+      confettiOpacity.value = withSequence(
+        withDelay(300, withTiming(1, { duration: 500 })),
+        withDelay(2000, withTiming(0, { duration: 1000 }))
+      );
+      
+      // Haptic celebration
+      if (settings.hapticEnabled) {
+        setTimeout(() => triggerNotificationFeedback('Success'), 300);
       }
     } else {
       opacity.value = 0;
       scale.value = 0;
       confettiOpacity.value = 0;
     }
-  }, [visible, gameStatus, settings.hapticEnabled]);
+  }, [visible, settings.hapticEnabled]);
   
   const animatedModalStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -79,28 +77,21 @@ export default function GameResultModal({ visible, onPlayAgain, onGoHome }: Game
     opacity: confettiOpacity.value,
   }));
   
-  const isWon = gameStatus === 'won';
   const attemptsUsed = guesses.length;
   
-  const getResultTitle = () => {
-    if (isWon) {
-      switch (attemptsUsed) {
-        case 1: return '🏆 GENIUS!';
-        case 2: return '🎯 MAGNIFICENT!';
-        case 3: return '🌟 IMPRESSIVE!';
-        case 4: return '👏 SPLENDID!';
-        case 5: return '✨ GREAT!';
-        default: return '🎉 PHEW!';
-      }
+  const getWinTitle = () => {
+    switch (attemptsUsed) {
+      case 1: return '🏆 GENIUS!';
+      case 2: return '🎯 MAGNIFICENT!';
+      case 3: return '🌟 IMPRESSIVE!';
+      case 4: return '👏 SPLENDID!';
+      case 5: return '✨ GREAT!';
+      default: return '🎉 PHEW!';
     }
-    return '😔 Game Over';
   };
   
-  const getResultMessage = () => {
-    if (isWon) {
-      return `You guessed the word in ${attemptsUsed} ${attemptsUsed === 1 ? 'try' : 'tries'}!`;
-    }
-    return `The word was "${currentWord.toUpperCase()}"`;
+  const getWinMessage = () => {
+    return `You guessed the word in ${attemptsUsed} ${attemptsUsed === 1 ? 'try' : 'tries'}!`;
   };
   
   const handlePlayAgain = React.useCallback(() => {
@@ -130,7 +121,7 @@ export default function GameResultModal({ visible, onPlayAgain, onGoHome }: Game
         }).join('')
       ).join('\n');
       
-      const message = `Word Game CH\n${isWon ? `Solved in ${attemptsUsed}/${guesses.length + (isWon ? 0 : 1)}` : 'Failed'}\nScore: ${score}\n\n${grid}`;
+      const message = `Word Game CH\nSolved in ${attemptsUsed}/${guesses.length}\nScore: ${score}\n\n${grid}`;
       
       if (Platform.OS === 'web') {
         navigator.clipboard.writeText(message);
@@ -158,20 +149,18 @@ export default function GameResultModal({ visible, onPlayAgain, onGoHome }: Game
     >
       <View style={styles.overlay}>
         {/* Confetti Effect - Fixed positioning */}
-        {isWon && (
-          <Animated.View style={[styles.confetti, animatedConfettiStyle]}>
-            <Text style={styles.confettiText}>🎉🎊✨🌟⭐🎉🎊✨🌟⭐</Text>
-          </Animated.View>
-        )}
+        <Animated.View style={[styles.confetti, animatedConfettiStyle]}>
+          <Text style={styles.confettiText}>🎉🎊✨🌟⭐🎉🎊✨🌟⭐</Text>
+        </Animated.View>
         
         <Animated.View style={[styles.modal, animatedModalStyle, settings.darkMode && styles.darkModal]}>
           {/* Result Header */}
           <View style={styles.header}>
             <Text style={[styles.title, settings.darkMode && styles.darkText]}>
-              {getResultTitle()}
+              {getWinTitle()}
             </Text>
             <Text style={[styles.subtitle, settings.darkMode && styles.darkSubtitle]}>
-              {getResultMessage()}
+              {getWinMessage()}
             </Text>
           </View>
           

@@ -16,7 +16,8 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { useGameStore } from '../services/gameStore';
 import GameBoard from '../components/game/GameBoard';
 import Keyboard from '../components/game/Keyboard';
-import GameResultModal from '../components/game/GameResultModal';
+import GameWinModal from '../components/game/GameWinModal';
+import GameLoseModal from '../components/game/GameLoseModal';
 import Toast from '../components/game/Toast';
 import ErrorScreen from '../components/ErrorScreen';
 
@@ -49,7 +50,8 @@ export default function GameScreen({ navigation, route }: Props) {
   } = useGameStore();
   
   const { difficulty: routeDifficulty, wordLength } = route.params;
-  const [showResultModal, setShowResultModal] = React.useState(false);
+  const [showWinModal, setShowWinModal] = React.useState(false);
+  const [showLoseModal, setShowLoseModal] = React.useState(false);
   const [isRestarting, setIsRestarting] = React.useState(false);
 
   React.useEffect(() => {
@@ -57,11 +59,15 @@ export default function GameScreen({ navigation, route }: Props) {
     startNewGame(routeDifficulty, wordLength);
   }, [routeDifficulty, wordLength, startNewGame]);
 
-  // Show result modal when game ends
+  // Show appropriate modal when game ends
   React.useEffect(() => {
-    if (gameStatus === 'won' || gameStatus === 'lost') {
+    if (gameStatus === 'won') {
       // Delay to allow final animation to complete
-      const timer = setTimeout(() => setShowResultModal(true), 1500);
+      const timer = setTimeout(() => setShowWinModal(true), 1500);
+      return () => clearTimeout(timer);
+    } else if (gameStatus === 'lost') {
+      // Delay to allow final animation to complete
+      const timer = setTimeout(() => setShowLoseModal(true), 1500);
       return () => clearTimeout(timer);
     }
   }, [gameStatus]);
@@ -86,8 +92,9 @@ export default function GameScreen({ navigation, route }: Props) {
       if (isRestarting) return;
       setIsRestarting(true);
       
-      // Step 1: Close modal first
-      setShowResultModal(false);
+      // Step 1: Close modals first
+      setShowWinModal(false);
+      setShowLoseModal(false);
       
       // Step 2: Wait for modal to close completely
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -110,8 +117,9 @@ export default function GameScreen({ navigation, route }: Props) {
 
   const handleGoHome = React.useCallback(async () => {
     try {
-      // Close modal first
-      setShowResultModal(false);
+      // Close modals first
+      setShowWinModal(false);
+      setShowLoseModal(false);
       
       // Wait for modal to close
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -243,10 +251,19 @@ export default function GameScreen({ navigation, route }: Props) {
       {/* Fixed bottom padding for safe area */}
       <View style={{ height: Math.max(insets.bottom, 10) }} />
 
-      {/* Result Modal */}
-      {showResultModal && (
-        <GameResultModal
-          visible={showResultModal}
+      {/* Win Modal */}
+      {showWinModal && (
+        <GameWinModal
+          visible={showWinModal}
+          onPlayAgain={handlePlayAgain}
+          onGoHome={handleGoHome}
+        />
+      )}
+      
+      {/* Lose Modal */}
+      {showLoseModal && (
+        <GameLoseModal
+          visible={showLoseModal}
           onPlayAgain={handlePlayAgain}
           onGoHome={handleGoHome}
         />
