@@ -157,7 +157,7 @@ export default function GameResultModal({ visible, onPlayAgain, onGoHome }: Game
       onRequestClose={() => {}} // Prevent hardware back button from closing
     >
       <View style={styles.overlay}>
-        {/* Confetti Effect */}
+        {/* Confetti Effect - Fixed positioning */}
         {isWon && (
           <Animated.View style={[styles.confetti, animatedConfettiStyle]}>
             <Text style={styles.confettiText}>🎉🎊✨🌟⭐🎉🎊✨🌟⭐</Text>
@@ -243,10 +243,15 @@ export default function GameResultModal({ visible, onPlayAgain, onGoHome }: Game
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   confetti: {
     position: 'absolute',
@@ -257,19 +262,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     pointerEvents: 'none',
+    zIndex: 1,
   },
   confettiText: {
     fontSize: 40,
     textAlign: 'center',
     lineHeight: 60,
+    width: '100%',
   },
   modal: {
     backgroundColor: '#ffffff',
     borderRadius: 20,
     padding: 30,
-    marginHorizontal: 30,
-    maxWidth: 400,
-    width: '90%',
+    width: Math.min(400, screenWidth - 40),
+    maxHeight: screenHeight - 80,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
