@@ -100,3 +100,6 @@ yarn-error.log*
 # Temporary folders
 tmp/
 temp/
+
+# Backup files
+backup/
