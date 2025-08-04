@@ -1,4 +1,4 @@
-name: Build Android APK/AAB
+name: Build Android APK/AAB - Expo SDK 51
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Setup Node.js 20 (compatible with Expo SDK 51)
+    - name: Setup Node.js 20
       uses: actions/setup-node@v4
       with:
         node-version: '20'
@@ -34,11 +34,8 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
-    - name: Clear cache and install dependencies
-      run: |
-        npm cache clean --force
-        rm -rf node_modules package-lock.json
-        npm install
+    - name: Install dependencies
+      run: npm ci
 
     - name: Setup Expo CLI
       run: npm install -g @expo/cli@latest
@@ -46,7 +43,7 @@ jobs:
     - name: Clean and generate Android project
       run: |
         rm -rf android/ ios/ .expo/
-        NODE_ENV=production npx expo prebuild --platform android --clean
+        npx expo prebuild --platform android --clean
 
     - name: Make gradlew executable
       run: chmod +x android/gradlew
@@ -76,3 +73,9 @@ jobs:
         path: android/app/build/outputs/bundle/release/app-release.aab
         retention-days: 30
       continue-on-error: true
+
+    - name: Build Summary
+      run: |
+        echo "🎉 Build completed with Expo SDK 51!"
+        ls -la android/app/build/outputs/apk/release/ || echo "No APK found"
+        ls -la android/app/build/outputs/bundle/release/ || echo "No AAB found"
