@@ -29,15 +29,12 @@ const config = {
       "expo-build-properties",
       {
         android: {
-          kotlinVersion: "1.9.25"
+          kotlinVersion: "1.9.25",
+          suppressKotlinVersionCompatibilityCheck: true
         }
       }
     ]
   ]
 };
 
-module.exports = withBuildProperties(config, {
-  android: {
-    kotlinVersion: "1.9.25"
-  }
-});
+module.exports = config;
