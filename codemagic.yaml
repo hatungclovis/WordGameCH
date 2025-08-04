@@ -1,6 +1,6 @@
 workflows:
   react-native-android:
-    name: Word Game CH - Android Build (SDK 51)
+    name: Word Game CH - Android Build
     max_build_duration: 30
     environment:
       vars:
@@ -18,24 +18,14 @@ workflows:
         - pattern: master
           include: true
     scripts:
-      - name: Install dependencies and downgrade to Expo SDK 51
+      - name: Install dependencies
         script: |
           npm install -g @expo/cli@latest
-          # Force downgrade to Expo SDK 51 (stable)
-          npm install expo@~51.0.0
-          npm install @expo/metro-runtime@~3.2.1
-          npm install react@18.2.0 react-dom@18.2.0
-          npm install react-native@0.74.5
-          npm install react-native-gesture-handler@~2.16.1
-          npm install react-native-reanimated@~3.10.1
-          npm install react-native-safe-area-context@4.10.5
-          npm install react-native-screens@3.31.1
-          npm install react-native-web@~0.19.10
-          npm install expo-haptics@~12.8.1
-          npm install expo-status-bar@~1.12.1
-          npm install expo-splash-screen@~0.27.5
-      - name: Prebuild for Android with SDK 51
+          rm -rf node_modules package-lock.json
+          npm install
+      - name: Prebuild for Android
         script: |
+          rm -rf android ios .expo
           npx expo prebuild --platform android --clean
       - name: Build Android APK
         script: |
