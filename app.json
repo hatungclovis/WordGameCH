@@ -4,7 +4,6 @@
     "slug": "wordgamech",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icons/app-icon.svg",
     "userInterfaceStyle": "automatic",
     "assetBundlePatterns": [
       "**/*"
@@ -15,10 +14,6 @@
       "buildNumber": "1"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/icons/adaptive-icon.svg",
-        "backgroundColor": "#ffffff"
-      },
       "package": "com.hatungclovis.wordgamech",
       "versionCode": 1,
       "permissions": [
