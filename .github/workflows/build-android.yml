@@ -11,6 +11,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
+    env:
+      NODE_ENV: production
+      EXPO_NO_TELEMETRY: 1
+    
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -39,7 +43,7 @@ jobs:
     - name: Clean and generate Android project
       run: |
         rm -rf android/ ios/
-        npx expo prebuild --platform android --clean
+        NODE_ENV=production npx expo prebuild --platform android --clean
 
     - name: Make gradlew executable
       run: chmod +x android/gradlew
