@@ -30,6 +30,10 @@
     "owner": "hatungclovis",
     "description": "Enhanced Wordle-style word guessing game with multiple difficulty levels, customizable word lengths, and comprehensive statistics tracking.",
     "githubUrl": "https://github.com/hatungclovis/WordGameCH",
-    "sdkVersion": "51.0.0"
+    "sdkVersion": "51.0.0",
+    "platforms": ["ios", "android", "web"],
+    "experiments": {
+      "typedRoutes": false
+    }
   }
 }
