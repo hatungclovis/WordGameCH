@@ -3,8 +3,6 @@ workflows:
     name: Word Game CH - Android Build
     max_build_duration: 30
     environment:
-      groups:
-        # No environment groups needed for basic build
       vars:
         NODE_ENV: production
         EXPO_NO_TELEMETRY: 1
@@ -42,7 +40,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - votre-email@gmail.com  # Remplacez par votre vraie adresse
+          - votre-email@gmail.com
         notify:
           success: true
           failure: true
