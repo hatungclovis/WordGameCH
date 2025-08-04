@@ -19,13 +19,17 @@
       "permissions": [
         "VIBRATE"
       ],
-      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.hatungclovis.wordgamech"
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.hatungclovis.wordgamech",
+      "compileSdkVersion": 34,
+      "targetSdkVersion": 34,
+      "buildToolsVersion": "34.0.0"
     },
     "web": {
       "bundler": "metro"
     },
     "owner": "hatungclovis",
     "description": "Enhanced Wordle-style word guessing game with multiple difficulty levels, customizable word lengths, and comprehensive statistics tracking.",
-    "githubUrl": "https://github.com/hatungclovis/WordGameCH"
+    "githubUrl": "https://github.com/hatungclovis/WordGameCH",
+    "sdkVersion": "51.0.0"
   }
 }
