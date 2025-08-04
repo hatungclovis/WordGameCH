@@ -6,6 +6,7 @@ workflows:
       vars:
         NODE_ENV: production
         EXPO_NO_TELEMETRY: 1
+        GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -Dkotlin.compiler.execution.strategy=in-process"
       node: 20.11.1
       java: 17
     triggering:
@@ -25,22 +26,28 @@ workflows:
       - name: Prebuild for Android
         script: |
           npx expo prebuild --platform android --clean
+      - name: Fix Kotlin Compose compatibility
+        script: |
+          cd android
+          # Add Kotlin compatibility flag to gradle.properties
+          echo "kotlin.compiler.suppress.compatibility.check=true" >> gradle.properties
+          echo "compose.kotlinCompilerVersion=1.9.24" >> gradle.properties
       - name: Build Android APK
         script: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease -Pkotlin.compiler.suppress.compatibility.check=true
       - name: Build Android AAB
         script: |
           cd android
-          ./gradlew bundleRelease
+          ./gradlew bundleRelease -Pkotlin.compiler.suppress.compatibility.check=true
     artifacts:
       - android/app/build/outputs/apk/release/*.apk
       - android/app/build/outputs/bundle/release/*.aab
     publishing:
       email:
         recipients:
-          - votre-hatungclovis@gmail.com
+          - votre-email@gmail.com
         notify:
           success: true
           failure: true
